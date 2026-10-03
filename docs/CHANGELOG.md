@@ -26,6 +26,7 @@ All meaningful project changes are recorded here.
 - Response latency optimization:
   - Feedback evaluation decoupled into background daemon thread (zero chat delay)
   - Small-talk and greeting heuristic skips unnecessary second LLM inference pass
+  - **Latency Fix:** Background feedback evaluation is now STRICTLY limited to messages explicitly flagged as feedback intent by the fast classifier. This completely eliminates Ollama queue blocking for standard conversations.
   - Conversation `max_tokens` set to 256 for rapid conversational generation
 - `tests/test_phase1.py` — added `chat_stream` tests (47 tests passing)
 
