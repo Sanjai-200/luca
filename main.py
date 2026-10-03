@@ -54,7 +54,7 @@ def health_check() -> bool:
 
 
 def interactive_loop(ctrl: Controller) -> None:
-    """Interactive text input loop with Phase 1 conversation pipeline."""
+    """Interactive text input loop with Phase 1 real-time streaming pipeline."""
     name = ctrl.identity.assistant_name
     title = ctrl.identity.user_title
     print(f"\n{ctrl.identity.greeting()}")
@@ -72,8 +72,10 @@ def interactive_loop(ctrl: Controller) -> None:
         if user_input.lower() in ("quit", "exit", "shutdown"):
             break
 
-        response = ctrl.chat(user_input)
-        print(f"{name}: {response}\n")
+        print(f"{name}: ", end="", flush=True)
+        for token in ctrl.chat_stream(user_input):
+            print(token, end="", flush=True)
+        print("\n")
 
 
 def main() -> None:

@@ -53,7 +53,7 @@ exchange between the user (Boss) and the assistant (Luca).
 Decide whether this exchange contains ANY of:
 1. A user PREFERENCE  (e.g. "I prefer dark mode", "always use VS Code")
 2. A CORRECTION       (e.g. "No, don't do it that way", "that's wrong")
-3. An important FACT about Boss (e.g. "I'm a Python developer", "my project is at D:\\PA\\luca")
+3. An important FACT about Boss (e.g. "I'm a Python developer", "my name is Sanjai", "my project is at D:\\PA\\luca")
 4. A BEHAVIORAL RULE  (e.g. "never delete files without asking", "always explain before acting")
 
 IMPORTANT:

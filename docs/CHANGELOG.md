@@ -21,7 +21,13 @@ All meaningful project changes are recorded here.
   - Confidence threshold (0.6) prevents noise
   - LearnedRuleStore persists permanent rules with deduplication
   - Rules injected into every system prompt for personalization
-- `tests/test_phase1.py` — 45 tests covering intent, conversation, feedback, learning, controller
+- `controller.py` — added `chat_stream()` for real-time word-by-word streaming
+- `main.py` — interactive console now streams responses dynamically
+- Response latency optimization:
+  - Feedback evaluation decoupled into background daemon thread (zero chat delay)
+  - Small-talk and greeting heuristic skips unnecessary second LLM inference pass
+  - Conversation `max_tokens` set to 256 for rapid conversational generation
+- `tests/test_phase1.py` — added `chat_stream` tests (47 tests passing)
 
 **Changed:**
 - `controller.py` — rewritten with full Phase 1 pipeline:

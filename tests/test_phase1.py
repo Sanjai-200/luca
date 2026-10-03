@@ -407,6 +407,16 @@ class TestControllerPhase1:
         result = ctrl.chat("")
         assert result == ""
 
+    def test_chat_stream_empty_input(self, ctrl):
+        tokens = list(ctrl.chat_stream(""))
+        assert tokens == []
+
+    def test_chat_stream_status(self, ctrl):
+        tokens = list(ctrl.chat_stream("status"))
+        output = "".join(tokens)
+        assert "State" in output
+        assert "Owner" in output
+
     def test_chat_without_llm_returns_response(self, ctrl):
         # When LLM is available, returns real response; when not, returns fallback
         result = ctrl.chat("Hello Luca")

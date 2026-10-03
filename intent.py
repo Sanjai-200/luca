@@ -67,7 +67,8 @@ _META_PATTERNS = re.compile(
 _FEEDBACK_PATTERNS = re.compile(
     r"\b(don't do|do not|stop doing|never|always|i prefer|i like|i want you to"
     r"|remember that|from now on|instead of|that's wrong|that is wrong"
-    r"|correct that|fix that|no,\s|not like that)\b", re.IGNORECASE
+    r"|correct that|fix that|no,\s|not like that"
+    r"|my name is|call me|i am called|i live in|my job is|my role is)\b", re.IGNORECASE
 )
 
 # Action / command patterns
