@@ -13,13 +13,13 @@ You do not own the repository. **Boss owns the project.**
 Before modifying anything:
 
 1. Read `AGENTS.md`.
-2. Read `assistant-master-requirements.md`.
-3. Read `ARCHITECTURE.md`.
-4. Read `DEVELOPMENT.md`.
-5. Read `GIT_WORKFLOW.md`.
-6. Read `CI_CD.md`.
-7. Read `SECURITY.md`.
-8. Read `DEVELOPMENT_STATE.md` when the task is unfinished/ongoing.
+2. Read `docs/assistant-master-requirements.md`.
+3. Read `docs/ARCHITECTURE.md`.
+4. Read `docs/DEVELOPMENT.md`.
+5. Read `docs/GIT_WORKFLOW.md`.
+6. Read `docs/CI_CD.md`.
+7. Read `docs/SECURITY.md`.
+8. Read `docs/DEVELOPMENT_STATE.md` when the task is unfinished/ongoing.
 9. Inspect the current Git status, branch, diff, and relevant source files.
 
 Do not assume another AI's previous implementation is still current.
@@ -82,14 +82,14 @@ Do not claim a feature works merely because the code looks correct.
 Update documentation when architecture, behavior, requirements, setup, security, or development workflow changes.
 
 Update:
-- `ARCHITECTURE.md` for architecture changes
-- `assistant-master-requirements.md` only when an accepted product requirement changes
-- `CHANGELOG.md` for meaningful completed changes
-- `DEVELOPMENT_STATE.md` for unfinished/in-progress work
+- `docs/ARCHITECTURE.md` for architecture changes
+- `docs/assistant-master-requirements.md` only when an accepted product requirement changes
+- `docs/CHANGELOG.md` for meaningful completed changes
+- `docs/DEVELOPMENT_STATE.md` for unfinished/in-progress work
 
 ## 8. Long-running task rule
 
-For substantial work, maintain `DEVELOPMENT_STATE.md`.
+For substantial work, maintain `docs/DEVELOPMENT_STATE.md`.
 
 Record:
 - feature

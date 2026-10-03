@@ -1,0 +1,12 @@
+# Luca core dependencies
+# Phase 0: no mandatory pip deps — everything uses Python stdlib.
+# Optional dependencies are listed below.
+
+# Optional: identity.yaml parsing (works without it using defaults)
+# pyyaml>=6.0
+
+# Optional: better async support (future phases)
+# anyio>=4.0
+
+# Testing
+pytest>=8.0

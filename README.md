@@ -6,50 +6,59 @@ Luca is a local-first Windows personal AI assistant designed to understand natur
 
 - Assistant name: **Luca**
 - User address: **Boss**
-- Both are configurable and must not be hard-coded throughout the codebase.
-- The user may rename Luca or change the form of address later.
+- Both are configurable via `identity.yaml` — no code changes needed.
 
-## Development environment
+## Quick start
 
-Primary IDE/agent environment: **Antigravity**
+```powershell
+# Run the health check
+python main.py --check
 
-Primary local repository:
+# Start Luca in interactive text mode
+python main.py
 
-```text
-D:/PA/luca/
+# Run tests
+python -m pytest tests/ -v
 ```
 
-Other development agents may include:
-- Codex CLI / Astra
-- Claude Code
-- Gemini/Antigravity agents
-- ChatGPT or other coding agents in the future
+## Project structure
 
-All agents work on the same canonical repository. No duplicate local copies should be created.
+```
+D:\PA\luca\
+├── main.py           Entry point
+├── config.py         All configuration
+├── controller.py     Central orchestrator
+├── state.py          Application state machine
+├── memory.py         Memory system (abstraction + SQLite)
+├── llm.py            LLM providers (abstraction + Ollama)
+├── safety.py         Risk classification + permissions
+├── tools.py          Tool abstraction + registry
+├── identity.yaml     Configurable assistant identity
+├── requirements.txt  Dependencies
+├── .env.example      Environment variable template
+├── .gitignore        Git ignore rules
+├── AGENTS.md         AI agent development rules
+├── README.md         This file
+├── docs/             All project documentation
+├── tests/            Test suite
+└── scripts/          PowerShell dev scripts
+```
 
 ## Branch policy
-
-Exactly two primary long-lived branches:
 
 - `main` — stable and explicitly approved
 - `testing` — all development
 
-Every feature, fix, refactor, experiment, model/provider change, UI change, and documentation-affecting implementation starts on `testing`.
+**Never promote `testing` to `main` without explicit Boss approval.**
 
-**Never promote `testing` to `main` without explicit user approval.**
+## Documentation
 
-## Repository truth
-
-The repository is the engineering source of truth:
-
-- `AGENTS.md` — universal AI development rules
-- `assistant-master-requirements.md` — complete product requirements
-- `ARCHITECTURE.md` — current architecture
-- `DEVELOPMENT.md` — implementation strategy
-- `GIT_WORKFLOW.md` — Git workflow
-- `CI_CD.md` — validation/build/release workflow
-- `AI_HANDOFF.md` — handoff between coding agents
-- `SECURITY.md` — security and privacy rules
-- `DEVELOPMENT_STATE.md` — current unfinished work
+All project docs live in `docs/`:
+- `assistant-master-requirements.md` — product requirements
+- `ARCHITECTURE.md` — architecture
+- `DEVELOPMENT.md` — development guide
+- `DEVELOPMENT_STATE.md` — current work state
+- `CHANGELOG.md` — change history
+- See `docs/` for the full list.
 
 Read the relevant documents before modifying the project.
