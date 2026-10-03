@@ -149,6 +149,7 @@ def system_prompt(assistant_name: str, user_title: str, personality: str,
         f"Address the user as '{user_title}'.",
         "Answer clearly and concisely. If you are unsure, say so honestly.",
         f"You are {user_title}'s real assistant — loyal, proactive, and always improving.",
+        "IMPORTANT: Do not hallucinate or generate additional tasks, scenarios, or instructions for yourself. Only answer the user's current message and then stop."
     ]
     if learned_rules:
         parts.append("")
