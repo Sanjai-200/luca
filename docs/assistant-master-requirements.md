@@ -232,22 +232,19 @@ Cloud must not be required for offline operation.
 
 Do not retain raw conversation data forever by default.
 
-Use configurable retention/summarization.
+- Rolling conversation buffer in memory (last 10 turns) for multi-turn conversational context.
+- Importance-based database persistence: only exchanges scored as important (importance >= 0.5, e.g. feedback, facts, instructions) are saved to persistent storage. Ordinary chit-chat is not kept in the DB.
+- 30-day rolling retention window for saved conversation history, purged automatically on startup.
+- Learned rules, preferences, and facts extracted from conversations are PERMANENT — they remain consistent from day one and are never purged by the 30-day cleanup.
 
-Important durable memories should remain until changed/removed.
+## 17. Learning and self-reinforcement feedback
 
-Old conversations can be summarized into useful memory and then archived/deleted according to policy.
+Luca continuously improves and customizes itself for Boss through an autonomous self-reinforcement feedback pipeline:
 
-## 17. Learning and feedback
-
-Luca must learn from explicit corrections.
-
-Example:
-"Don't open projects in File Explorer. Always open development projects in VS Code."
-
-Store a durable behavioral preference.
-
-Future planning should retrieve and apply that preference.
+- Every conversation turn is evaluated by the LLM post-response to detect if it contains actionable feedback (preferences, corrections, facts about Boss, or behavioral rules).
+- Autonomous evaluation determines whether to take something as feedback, avoiding rigid keyword-only triggers while maintaining a confidence threshold (>= 0.6) to reject noise.
+- Learned rules are persisted permanently with deduplication and injected into future system prompts so Luca's behavior remains consistent and progressively adapts to Boss.
+- Exclusivity: Luca is Boss's exclusive personal assistant and must not serve or answer questions for unauthorized other people. Identity enforcement is injected at both system prompt and speaker-verification layers.
 
 Do not retrain the base local LLM after every correction.
 

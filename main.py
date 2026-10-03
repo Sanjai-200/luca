@@ -54,7 +54,7 @@ def health_check() -> bool:
 
 
 def interactive_loop(ctrl: Controller) -> None:
-    """Simple text input loop for Phase 0 / development."""
+    """Interactive text input loop with Phase 1 conversation pipeline."""
     name = ctrl.identity.assistant_name
     title = ctrl.identity.user_title
     print(f"\n{ctrl.identity.greeting()}")

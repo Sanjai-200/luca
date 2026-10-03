@@ -4,6 +4,38 @@ All meaningful project changes are recorded here.
 
 ## Unreleased / testing
 
+### Phase 1 — Conversational Pipeline & Self-Improvement (2026-10-04)
+
+**Added:**
+- `intent.py` — two-stage intent classifier (fast keyword + LLM fallback)
+  - Classifies into: CONVERSATION, ACTION, FEEDBACK, STATUS, META
+  - Fast path uses zero-latency regex/keyword matching
+  - LLM fallback only for ambiguous messages (confidence < 0.7)
+- `conversation.py` — conversation history management
+  - Rolling buffer (last 10 turns) for multi-turn context
+  - Importance-based persistence (only saves important exchanges)
+  - 30-day automatic retention with cleanup on startup
+  - Learned rules are PERMANENT and never purged
+- `learning.py` — self-reinforcement feedback system
+  - FeedbackEvaluator uses LLM to detect preferences/corrections/facts/rules
+  - Confidence threshold (0.6) prevents noise
+  - LearnedRuleStore persists permanent rules with deduplication
+  - Rules injected into every system prompt for personalization
+- `tests/test_phase1.py` — 45 tests covering intent, conversation, feedback, learning, controller
+
+**Changed:**
+- `controller.py` — rewritten with full Phase 1 pipeline:
+  - Intent classification → memory retrieval → rules injection → history → LLM → feedback → learn
+  - Status command shows learned rules count and history turns
+- `llm.py` — enhanced system prompt:
+  - Owner-only identity (Luca serves ONLY Boss, refuses others)
+  - Learned rules and memory context injection
+  - Stronger personality enforcement
+- `main.py` — updated interactive loop for Phase 1
+- `docs/ARCHITECTURE.md` — updated module tree to match flat structure
+- `docs/DEVELOPMENT_STATE.md` — Phase 1 state tracking
+- `docs/CHANGELOG.md` — Phase 1 entries
+
 ### Phase 0 — Foundation (2026-10-03)
 
 **Added:**

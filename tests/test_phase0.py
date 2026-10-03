@@ -275,6 +275,7 @@ class TestController:
     def test_chat_without_llm(self, tmp_path):
         ctrl = self._make_ctrl(tmp_path)
         ctrl.start()
+        ctrl._llm = None
         response = ctrl.chat("hello")
         # Without Ollama running, should return a friendly fallback
         assert "LLM" in response or "Ollama" in response or ctrl.identity.assistant_name in response

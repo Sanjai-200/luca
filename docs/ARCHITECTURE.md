@@ -46,57 +46,33 @@ Fast response              Permission/Safety
                     TTS + Luca Character
 ```
 
-## 2. Core modules
+## 2. Core modules (flat structure at project root)
 
 ```text
-luca/
-├── assistant/
-│   ├── controller.py
-│   ├── identity.py
-│   ├── state.py
-│   ├── planner.py
-│   └── router.py
-├── llm/
-│   ├── base.py
-│   ├── ollama_provider.py
-│   └── prompts.py
-├── memory/
-│   ├── base.py
-│   ├── sqlite_store.py
-│   ├── manager.py
-│   └── retrieval.py
-├── learning/
-│   ├── feedback.py
-│   ├── preferences.py
-│   └── evaluator.py
-├── voice/
-│   ├── manager.py
-│   ├── stt/
-│   ├── tts/
-│   ├── wake/
-│   └── speaker_identity/
-├── tools/
-│   ├── apps.py
-│   ├── files.py
-│   ├── windows.py
-│   ├── shell.py
-│   ├── browser.py
-│   └── projects.py
-├── safety/
-│   ├── permissions.py
-│   ├── validator.py
-│   └── risk.py
-├── internet/
-│   ├── search.py
-│   └── browser.py
-├── ui/
-│   ├── character.py
-│   ├── tray.py
-│   └── assets/
-└── config/
-    ├── settings.py
-    └── identity.json
+D:\PA\luca\
+├── main.py              Entry point (--check / interactive loop)
+├── config.py            All settings, identity loader, sub-configs
+├── controller.py        Central orchestrator — wires everything together
+├── state.py             Thread-safe observable state machine
+├── intent.py            Two-stage intent classifier (keyword + LLM fallback)
+├── conversation.py      Rolling history buffer + persistent conversation store
+├── learning.py          LLM-driven feedback evaluator + permanent learned rules
+├── llm.py               LLMProvider ABC + OllamaProvider + prompt templates
+├── memory.py            MemoryStore ABC + SQLiteMemoryStore + MemoryManager
+├── safety.py            Risk classification + command validation + permissions
+├── tools.py             Tool ABC + ToolRegistry
+├── identity.yaml        Configurable assistant/user identity
+├── requirements.txt     Dependencies (pytest only for core)
+├── tests/
+│   ├── test_phase0.py   Phase 0 foundation tests (33 tests)
+│   └── test_phase1.py   Phase 1 conversation/intent/learning tests (40+ tests)
+├── scripts/             PowerShell dev scripts
+├── docs/                Project documentation
+├── user_data/           SQLite DB, user preferences (gitignored)
+├── models/              Local model files (gitignored)
+└── logs/                Runtime logs (gitignored)
 ```
+
 
 ## 3. Replaceable providers
 

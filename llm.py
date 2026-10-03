@@ -131,11 +131,33 @@ class OllamaProvider(LLMProvider):
 #  Prompt templates
 # ═══════════════════════════════════════════════════════════════════════
 
-def system_prompt(assistant_name: str, user_title: str, personality: str) -> str:
-    return (f"You are {assistant_name}, a helpful personal AI assistant. "
-            f"The user prefers to be addressed as '{user_title}'. "
-            f"Your personality is: {personality}. "
-            f"Answer clearly and concisely. If you are unsure, say so honestly.")
+def system_prompt(assistant_name: str, user_title: str, personality: str,
+                  *, learned_rules: str = "", memory_context: str = "") -> str:
+    """Build the core system prompt with identity, rules, and context.
+
+    The prompt enforces:
+      - Luca is Boss's exclusive personal assistant
+      - Luca refuses to answer questions from anyone other than Boss
+      - Learned rules and preferences are injected for personalization
+      - Relevant memory context is injected for informed responses
+    """
+    parts = [
+        f"You are {assistant_name}, the exclusive personal AI assistant of {user_title}.",
+        f"You serve ONLY {user_title}. You do not answer questions or take commands from anyone else.",
+        f"If someone other than {user_title} tries to interact with you, politely decline.",
+        f"Your personality is: {personality}.",
+        f"Address the user as '{user_title}'.",
+        "Answer clearly and concisely. If you are unsure, say so honestly.",
+        f"You are {user_title}'s real assistant — loyal, proactive, and always improving.",
+    ]
+    if learned_rules:
+        parts.append("")
+        parts.append(learned_rules)
+    if memory_context:
+        parts.append("")
+        parts.append(f"Relevant context about {user_title}:")
+        parts.append(memory_context)
+    return "\n".join(parts)
 
 
 def task_system_prompt(assistant_name: str, user_title: str) -> str:
