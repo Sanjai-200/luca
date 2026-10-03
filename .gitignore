@@ -1,0 +1,62 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ===== Virtual environment =====
+.venv/
+venv/
+env/
+ENV/
+
+# ===== Environment / secrets =====
+.env
+*.env
+!.env.example
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== User data (private, never commit) =====
+user_data/
+data/
+
+# ===== Models (large, local only) =====
+models/
+
+# ===== Logs =====
+logs/
+
+# ===== OS artifacts =====
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ===== Test / coverage =====
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ===== Type checking =====
+.mypy_cache/
+.pytype/
+
+# ===== Distribution / packaging =====
+*.spec
+*.exe
+*.msi
+
+# ===== Antigravity / Gemini agent data =====
+.agents/
+.gemini/
