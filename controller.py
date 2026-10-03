@@ -323,9 +323,9 @@ class Controller:
                                   turn: ConversationTurn, *,
                                   is_feedback: bool = False) -> None:
         """Run feedback evaluation in a background thread to prevent blocking chat."""
-        # Fast heuristic: small-talk/greetings never contain feedback
-        lower = user_input.strip().lower()
-        if not is_feedback and lower in _SKIP_FEEDBACK_HEURISTICS:
+        # Fast heuristic: only evaluate if the classifier flagged it as feedback.
+        # This prevents normal conversation from queuing behind background LLM calls.
+        if not is_feedback:
             if self.conversation_store:
                 self.conversation_store.save_if_important(turn)
             return
