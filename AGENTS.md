@@ -135,9 +135,11 @@ Current assistant identity:
 
 These must be configuration/identity data, not scattered constants.
 
-## 12. Fast conversational path
+## 12. Fast conversational path (STRICT LATENCY RULE)
 
-Normal questions should be answered quickly.
+Normal questions should be answered quickly. **Speed and low latency are absolute, non-negotiable requirements.**
+
+Never introduce new features, background tasks, or AI logic that block or slow down the fast conversational path. Do not compromise response speed for any new features.
 
 Do NOT send every question through the slow agent/action pipeline.
 

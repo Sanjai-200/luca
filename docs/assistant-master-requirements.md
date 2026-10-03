@@ -64,9 +64,11 @@ Understand
 -> Respond
 -> Remember/Learn when appropriate
 
-## 6. Fast conversation path
+## 6. Fast conversation path (STRICT LATENCY RULE)
 
-Normal informational and conversational questions should feel immediate.
+Normal informational and conversational questions should feel immediate. 
+**Speed and low latency are absolute, non-negotiable core requirements.**
+Never introduce new features, heavy background processing, or complex prompt chains that block or slow down this fast conversational path. Speed must not be compromised for any future functionality.
 
 Examples:
 - explain a concept
