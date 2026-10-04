@@ -198,8 +198,8 @@ class Orchestrator:
                 yield status_msg
             self._state = AppState.STANDBY
 
-        # Clean reply for history so past turns don't pollute future context with raw JSON tags
-        history_reply = strip_tool_tags(reply) if tool_calls else reply
+        # Keep tool tags in the history so the LLM retains few-shot context of how to use tools
+        history_reply = reply
         importance = 0.7 if is_feedback else 0.3
         turn = self._history.add(stripped, history_reply, importance=importance)
 

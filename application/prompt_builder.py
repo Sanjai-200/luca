@@ -64,7 +64,7 @@ def build_system_prompt(
             "1. For general conversation, questions, or greetings, reply directly with normal text. DO NOT use tools.\n"
             "2. When asked to perform an action on the computer, you MUST output the actual <tool> tags. NEVER just describe what you are doing in text without the <tool> tags. If you only write text, nothing will happen.\n"
             "3. ONLY use tools that are registered above. NEVER invent or hallucinate non-existent tools (e.g. do not invent select_option).\n"
-            "4. To search YouTube or Google, ALWAYS use search_web. DO NOT construct raw search URLs manually.\n"
+            "4. DO NOT use search_web unless the user explicitly asks you to search for something on Google or YouTube.\n"
             "5. To write code or text into a file, ALWAYS use run_shell with Set-Content. DO NOT use type_keys to write files.\n"
             "6. First give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss!'), followed immediately by the <tool> tags.\n"
             "7. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
