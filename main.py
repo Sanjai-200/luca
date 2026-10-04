@@ -11,13 +11,12 @@ import logging
 import sys
 from pathlib import Path
 
-# Ensure the project root is on sys.path so all modules import cleanly.
+# Ensure the project root is on sys.path
 _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from config import load_settings
-from controller import Controller
+from app.bootstrap import load_config, create_orchestrator
 
 
 def setup_logging(level: str = "INFO", logs_dir: str = "") -> None:
@@ -33,31 +32,29 @@ def setup_logging(level: str = "INFO", logs_dir: str = "") -> None:
 
 
 def health_check() -> bool:
-    """Run a quick startup/import/init check and return True if everything is OK."""
+    """Run a quick startup/import/init check."""
     print("=== Luca Health Check ===")
-    settings = load_settings()
-    print(f"  Project root : {settings.project_root}")
-    print(f"  Assistant    : {settings.identity.assistant_name}")
-    print(f"  User title   : {settings.identity.user_title}")
-    print(f"  LLM provider : {settings.llm.provider} ({settings.llm.model})")
-    print(f"  Memory       : {settings.memory.backend} -> {settings.memory.sqlite_path}")
-    print(f"  Debug        : {settings.debug}")
+    config = load_config()
+    print(f"  Project root : {config.project_root}")
+    print(f"  Assistant    : {config.assistant_name}")
+    print(f"  User title   : {config.user_title}")
+    print(f"  AI provider  : {config.ai_provider} ({config.ai_model})")
+    print(f"  Memory       : {config.memory_backend} -> {config.sqlite_path}")
 
-    ctrl = Controller(settings)
-    ctrl.start()
-    print(f"  State        : {ctrl.state.state.value}")
-    print(f"  Memory       : initialised OK")
-    print(f"  Tools        : {len(ctrl.tools.tool_names)} registered")
-    ctrl.shutdown()
+    orchestrator = create_orchestrator(config)
+    orchestrator.start()
+    print(f"  State        : {orchestrator.state.value}")
+    print(f"  Tools        : {len(orchestrator._tools)} registered")
+    orchestrator.shutdown()
     print("=== All checks passed ===")
     return True
 
 
-def interactive_loop(ctrl: Controller) -> None:
-    """Interactive text input loop with Phase 1 real-time streaming pipeline."""
-    name = ctrl.identity.assistant_name
-    title = ctrl.identity.user_title
-    print(f"\n{ctrl.identity.greeting()}")
+def interactive_loop(orchestrator) -> None:
+    """Interactive text input loop with real-time streaming."""
+    name = orchestrator.assistant_name
+    title = orchestrator.user_title
+    print(f"\nHello, {title}. {name} is ready.")
     print(f"Type a message to talk to {name}, or 'quit' to exit.\n")
 
     while True:
@@ -73,7 +70,7 @@ def interactive_loop(ctrl: Controller) -> None:
             break
 
         print(f"{name}: ", end="", flush=True)
-        for token in ctrl.chat_stream(user_input):
+        for token in orchestrator.chat_stream(user_input):
             print(token, end="", flush=True)
         print("\n")
 
@@ -83,17 +80,17 @@ def main() -> None:
         success = health_check()
         sys.exit(0 if success else 1)
 
-    settings = load_settings()
-    setup_logging(settings.log_level, settings.logs_dir)
+    config = load_config()
+    setup_logging(config.log_level, config.logs_dir)
 
-    ctrl = Controller(settings)
+    orchestrator = create_orchestrator(config)
     try:
-        ctrl.start()
-        interactive_loop(ctrl)
+        orchestrator.start()
+        interactive_loop(orchestrator)
     except Exception:
         logging.exception("Fatal error")
     finally:
-        ctrl.shutdown()
+        orchestrator.shutdown()
 
 
 if __name__ == "__main__":

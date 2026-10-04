@@ -25,12 +25,12 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from config import Settings, MemoryConfig
-from conversation import ConversationHistory, ConversationStore, ConversationTurn
-from intent import IntentClassifier, IntentType, IntentResult, LLMIntentClassifier
-from learning import FeedbackEvaluator, FeedbackResult, LearnedRuleStore
-from llm import LLMResponse, Message
-from memory import MemoryCategory, MemoryManager, SQLiteMemoryStore
+from application.conversation import ConversationHistory, ConversationStore, ConversationTurn
+from application.intent_router import IntentClassifier, IntentType, IntentResult, LLMIntentClassifier
+from application.learning import FeedbackEvaluator, FeedbackResult, LearnedRuleStore
+from core.interfaces import LLMResponse, Message, MemoryCategory
+from application.memory_manager import MemoryManager
+from infrastructure.sqlite_memory import SQLiteMemoryStore
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -219,7 +219,7 @@ class TestConversationStore:
     def test_purge_old_conversations(self, memory):
         store = ConversationStore(memory, retention_days=30)
         # Manually save an old conversation item
-        from memory import MemoryItem
+        from core.interfaces import MemoryItem
         old_time = datetime.now(timezone.utc) - timedelta(days=60)
         memory._store.save(MemoryItem(
             category=MemoryCategory.CONVERSATION,
@@ -377,69 +377,56 @@ class TestLLMIntentClassifier:
 
 class TestControllerPhase1:
     """Test the Phase 1 controller integration."""
-
+class TestOrchestrator:
     @pytest.fixture
     def ctrl(self, tmp_path):
-        """Create a Controller with a temporary database."""
-        settings = Settings()
-        settings.memory.sqlite_path = str(tmp_path / "test.db")
-        settings.user_data_dir = str(tmp_path / "user_data")
-        settings.data_dir = str(tmp_path / "data")
-        settings.logs_dir = str(tmp_path / "logs")
-        settings.models_dir = str(tmp_path / "models")
-        from controller import Controller
-        c = Controller(settings)
+        """Create an Orchestrator with a temporary database."""
+        from application.memory_manager import MemoryManager
+        from infrastructure.sqlite_memory import SQLiteMemoryStore
+        from tools.registry import ToolRegistry
+        from application.orchestrator import Orchestrator
+
+        db_path = tmp_path / "test.db"
+        memory = MemoryManager(SQLiteMemoryStore(str(db_path)))
+        tools = ToolRegistry()
+        c = Orchestrator(ai_provider=None, memory=memory, tool_registry=tools)
         c.start()
         yield c
         c.shutdown()
 
     def test_status_command(self, ctrl):
-        result = ctrl.chat("status")
+        tokens = list(ctrl.chat_stream("status"))
+        result = "".join(tokens)
         assert "State" in result
         assert "Owner" in result
         assert "Boss" in result
 
     def test_status_shows_learned_rules(self, ctrl):
-        result = ctrl.chat("status")
+        tokens = list(ctrl.chat_stream("status"))
+        result = "".join(tokens)
         assert "Learned rules" in result
-
-    def test_empty_input_returns_empty(self, ctrl):
-        result = ctrl.chat("")
-        assert result == ""
 
     def test_chat_stream_empty_input(self, ctrl):
         tokens = list(ctrl.chat_stream(""))
         assert tokens == []
 
-    def test_chat_stream_status(self, ctrl):
-        tokens = list(ctrl.chat_stream("status"))
-        output = "".join(tokens)
-        assert "State" in output
-        assert "Owner" in output
-
     def test_chat_without_llm_returns_response(self, ctrl):
-        # When LLM is available, returns real response; when not, returns fallback
-        result = ctrl.chat("Hello Luca")
-        assert isinstance(result, str)
-        assert len(result) > 0
+        tokens = list(ctrl.chat_stream("Hello Luca"))
+        result = "".join(tokens)
+        assert "don't have an LLM connected" in result
 
-    def test_conversation_history_populated(self, ctrl):
-        ctrl.chat("Hello")
-        # History should have recorded the turn (even if fallback)
-        # The chat method records turns in history only if LLM generates
-        # Since no LLM, history stays empty — this is correct behavior
-        assert len(ctrl.history) >= 0
-
-    def test_controller_start_shutdown_clean(self, tmp_path):
-        settings = Settings()
-        settings.memory.sqlite_path = str(tmp_path / "test2.db")
-        settings.user_data_dir = str(tmp_path / "user_data2")
-        settings.data_dir = str(tmp_path / "data2")
-        settings.logs_dir = str(tmp_path / "logs2")
-        settings.models_dir = str(tmp_path / "models2")
-        from controller import Controller
-        c = Controller(settings)
+    def test_orchestrator_start_shutdown_clean(self, tmp_path):
+        from application.memory_manager import MemoryManager
+        from infrastructure.sqlite_memory import SQLiteMemoryStore
+        from tools.registry import ToolRegistry
+        from application.orchestrator import Orchestrator
+        
+        db_path = tmp_path / "test2.db"
+        memory = MemoryManager(SQLiteMemoryStore(str(db_path)))
+        tools = ToolRegistry()
+        c = Orchestrator(ai_provider=None, memory=memory, tool_registry=tools)
+        
         c.start()
-        assert c.state.state.value == "standby"
+        assert c.state.value == "standby"
         c.shutdown()
-        assert c.state.state.value == "shutting_down"
+        assert c.state.value == "shutting_down"
