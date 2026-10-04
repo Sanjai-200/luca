@@ -1,8 +1,8 @@
 # Luca Development State
 
-## Current Phase: Phase 4 & 5 — Application Control & Agentic Pipeline
+## Current Phase: Testing Current Capabilities & OOP Modular Architecture
 
-### Status: IN PROGRESS
+### Status: IN PROGRESS / AWAITING USER VERIFICATION
 
 ### Branch: `testing`
 
@@ -10,32 +10,33 @@
 
 ## Completed Work
 
-### Phase 0 & 1 (COMPLETE)
-- Project foundation, settings, state, abstractions.
-- Conversational pipeline, intent classifier, SQLite memory.
-- Learning/feedback loop.
+### 1. Full OOP Layered Architecture Redesign (COMPLETE)
+Transformed legacy procedural/monolithic structure into a clean, modular, extensible OOP architecture:
+- **`core/`**: Domain entities and interfaces (`IAIProvider`, `IMemoryStore`, `IToolRegistry`, `IPermissionManager`, `ISpeakerVerifier`), value objects, and domain exceptions.
+- **`infrastructure/`**: Concrete implementations (`OllamaProvider` with `keep_alive=-1`, `SQLiteMemoryStore`, `StandardConfigStore`).
+- **`tools/`**: Extensible tool system (`BaseTool`, `ShellTool`, `OpenAppTool`, `WaitTool`, `TypeKeysTool`, `ToolRegistry`).
+- **`application/`**: Use cases and orchestration (`Orchestrator`, `MemoryManager`, `PromptBuilder`, `LearningManager`, `SafetyPipeline`).
+- **`app/`**: Dependency injection container and application bootstrap (`Container`, `Bootstrap`).
+- **`main.py`**: Consolidated single entry point for the assistant.
+- Removed legacy flat files (`controller.py`, `llm.py`, `luca_tools.py`, `config.py`, `main_v2.py`).
 
-### Phase 4 & 5 (IN PROGRESS)
-- Built `luca_tools.py` with `ShellTool` and `OpenAppTool`.
-- Registered tools in `controller.py` tool registry.
-- Updated `llm.py` `system_prompt` to dynamically inject tool instructions.
-- Modified `controller.py` `chat_stream` to intercept `<TOOL>` tags, parse JSON arguments, and dynamically execute shell commands and application launches.
-- **Latency Fix:** Added `keep_alive: -1` to the Ollama payload in `llm.py` to prevent the model from unloading, which was causing the 5-10 second cold-start delays.
+### 2. Test Suite Modernization (COMPLETE)
+- Rewrote `tests/test_phase0.py` and `tests/test_phase1.py` targeting the new OOP abstractions.
+- All 56 unit and integration tests passing (`python -m pytest tests/`).
 
-## Files Changed in Phase 4/5
+### 3. Small Model Hallucination & Prompt Tuning (COMPLETE)
+- Resolved `phi3:mini` issue where casual inputs ("hi", "who are you") triggered unnecessary tool calls (e.g. launching Notepad).
+- Tuned `application/prompt_builder.py` with strict negative constraints ("DO NOT call tools for conversational queries") and restored general Q&A capabilities.
 
-| File | Change |
-|------|--------|
-| `luca_tools.py` | NEW — Core desktop tools |
-| `controller.py` | MODIFIED — Integrated tool registry and streaming tool execution |
-| `llm.py` | MODIFIED — Added `keep_alive` and tool capabilities to system prompt |
-| `docs/DEVELOPMENT_STATE.md` | MODIFIED — Phase progression |
+---
 
-## Known Issues
-- Tool JSON parsing relies on standard `json` which can fail if the LLM escapes strings poorly.
-- Safety permission hooks need to be deeply integrated into `ShellTool` before high-risk tasks are allowed.
+## Known Issues & Ongoing Work
+- Interactive testing with Boss on local Ollama runtime to verify conversational vs. tool-execution boundaries.
+- Interactive safety confirmation hook for high-risk shell commands needs UI/terminal hookup during tool calls.
+
+---
 
 ## Next Steps
-1. Add full Safety verification hook (prompt Boss for medium/high-risk tool executions).
-2. Add Web Automation tools.
-3. Enhance Planner output to allow chaining multiple tools.
+1. **Interactive Capability Verification:** Boss tests conversational queries ("hi", "what is python") and action commands ("open notepad") via `python main.py`.
+2. **Phase 2:** Memory summarization & long-term retrospective index.
+3. **Phase 3:** High-risk safety permission interceptor before tool execution.
