@@ -430,3 +430,41 @@ class TestOrchestrator:
         assert c.state.value == "standby"
         c.shutdown()
         assert c.state.value == "shutting_down"
+
+
+class TestToolParserAndFilter:
+    """Tests for tool tag parsing and clean stream rendering."""
+
+    def test_strip_tool_tags(self):
+        from application.tool_parser import strip_tool_tags
+
+        raw = (
+            "I will open Notepad for you, Boss.\n\n"
+            "<tool>{\"name\": \"open_app\", \"args\": {\"target\": \"notepad.exe\"}}</tool>\n\n"
+            "Done!"
+        )
+        cleaned = strip_tool_tags(raw)
+        assert "<tool>" not in cleaned
+        assert "</tool>" not in cleaned
+        assert "I will open Notepad for you, Boss." in cleaned
+        assert "Done!" in cleaned
+
+    def test_filter_stream_tool_tags(self):
+        from application.tool_parser import filter_stream_tool_tags
+
+        tokens = [
+            "I'll start by opening Notepad. ",
+            "Please wait.\n\n",
+            "<to",
+            "ol>{\"name\": \"open_app\", ",
+            "\"args\": {\"target\": \"notepad.exe\"}}</",
+            "tool>\n\n",
+            "All set!",
+        ]
+        result = "".join(filter_stream_tool_tags(iter(tokens)))
+        assert "<tool>" not in result
+        assert "</tool>" not in result
+        assert "open_app" not in result
+        assert "I'll start by opening Notepad. Please wait." in result
+        assert "All set!" in result
+

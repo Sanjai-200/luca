@@ -15,7 +15,12 @@ from typing import Iterator
 
 from core.interfaces import AIProvider, AppState, Message, MemoryCategory
 from application.prompt_builder import build_system_prompt
-from application.tool_parser import parse_tool_calls, execute_tool_calls
+from application.tool_parser import (
+    parse_tool_calls,
+    execute_tool_calls,
+    filter_stream_tool_tags,
+    strip_tool_tags,
+)
 from application.memory_manager import MemoryManager
 from application.conversation import ConversationHistory, ConversationStore, ConversationTurn
 from application.learning import FeedbackEvaluator, LearnedRuleStore
@@ -167,10 +172,15 @@ class Orchestrator:
 
         # Stream LLM response
         chunks: list[str] = []
-        try:
+
+        def token_collector() -> Iterator[str]:
             for token in self._ai.stream(messages, max_tokens=self._max_tokens):
                 chunks.append(token)
                 yield token
+
+        try:
+            for clean_token in filter_stream_tool_tags(token_collector()):
+                yield clean_token
         except Exception as exc:
             logger.error("LLM stream error: %s", exc)
             self._state = AppState.ERROR
@@ -180,10 +190,6 @@ class Orchestrator:
         self._state = AppState.STANDBY
         reply = "".join(chunks)
 
-        # Record turn in history
-        importance = 0.7 if is_feedback else 0.3
-        turn = self._history.add(stripped, reply, importance=importance)
-
         # Parse and execute tool calls
         tool_calls = parse_tool_calls(reply)
         if tool_calls:
@@ -191,6 +197,11 @@ class Orchestrator:
             for status_msg in execute_tool_calls(tool_calls, self._tools):
                 yield status_msg
             self._state = AppState.STANDBY
+
+        # Clean reply for history so past turns don't pollute future context with raw JSON tags
+        history_reply = strip_tool_tags(reply) if tool_calls else reply
+        importance = 0.7 if is_feedback else 0.3
+        turn = self._history.add(stripped, history_reply, importance=importance)
 
         # Background learning (non-blocking)
         self._evaluate_and_learn_async(stripped, reply, turn, is_feedback=is_feedback)

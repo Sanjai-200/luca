@@ -19,16 +19,30 @@ if str(_ROOT) not in sys.path:
 from app.bootstrap import load_config, create_orchestrator
 
 
-def setup_logging(level: str = "INFO", logs_dir: str = "") -> None:
-    """Configure logging to console (and optionally to a file)."""
+def setup_logging(level: str = "INFO", logs_dir: str = "", debug: bool = False) -> None:
+    """Configure logging: clean interactive console, detailed file logging."""
     fmt = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    formatter = logging.Formatter(fmt)
+
+    # Console handler: keep interactive terminal clean unless debug mode is enabled
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG if debug else logging.WARNING)
+    console_handler.setFormatter(formatter)
+    handlers: list[logging.Handler] = [console_handler]
+
     if logs_dir:
         log_path = Path(logs_dir)
         log_path.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(log_path / "luca.log", encoding="utf-8"))
-    logging.basicConfig(level=getattr(logging, level, logging.INFO),
-                        format=fmt, handlers=handlers)
+        file_handler = logging.FileHandler(log_path / "luca.log", encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG if debug else getattr(logging, level, logging.INFO))
+        file_handler.setFormatter(formatter)
+        handlers.append(file_handler)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG if debug else getattr(logging, level, logging.INFO))
+    root_logger.handlers.clear()
+    for h in handlers:
+        root_logger.addHandler(h)
 
 
 def health_check() -> bool:
@@ -81,7 +95,7 @@ def main() -> None:
         sys.exit(0 if success else 1)
 
     config = load_config()
-    setup_logging(config.log_level, config.logs_dir)
+    setup_logging(config.log_level, config.logs_dir, debug=config.debug)
 
     orchestrator = create_orchestrator(config)
     try:

@@ -46,6 +46,68 @@ def parse_tool_calls(text: str) -> list[ToolCall]:
     return calls
 
 
+def strip_tool_tags(text: str) -> str:
+    """Remove all <tool>...</tool> tags and any enclosing markdown code fences."""
+    cleaned = _TOOL_PATTERN.sub("", text)
+    cleaned = re.sub(r"```(?:json)?\s*```", "", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def filter_stream_tool_tags(token_iterator: Iterator[str]) -> Iterator[str]:
+    """Filter out <tool>...</tool> tags from a real-time token stream.
+
+    Yields conversational tokens immediately while holding back tool markup
+    so raw JSON is never leaked to the interactive console.
+    """
+    buffer = ""
+    in_tool = False
+
+    for token in token_iterator:
+        buffer += token
+        while buffer:
+            if not in_tool:
+                lower = buffer.lower()
+                idx = lower.find("<tool")
+                if idx != -1:
+                    pre = buffer[:idx]
+                    # Strip any trailing markdown code fence right before <tool>
+                    stripped_pre = re.sub(r"```(?:json)?\s*$", "", pre)
+                    if stripped_pre:
+                        yield stripped_pre
+                    buffer = buffer[idx:]
+                    in_tool = True
+                else:
+                    prefix_match = False
+                    for length in range(min(len(buffer), 5), 0, -1):
+                        if "<tool"[:length] == lower[-length:]:
+                            prefix = buffer[:-length]
+                            if prefix:
+                                yield prefix
+                            buffer = buffer[-length:]
+                            prefix_match = True
+                            break
+                    if prefix_match:
+                        break
+                    else:
+                        yield buffer
+                        buffer = ""
+            else:
+                end_idx = buffer.lower().find("</tool>")
+                if end_idx != -1:
+                    buffer = buffer[end_idx + 7:]
+                    # Strip any trailing markdown code fence right after </tool>
+                    buffer = re.sub(r"^\s*```", "", buffer)
+                    in_tool = False
+                else:
+                    break
+
+    if buffer and not in_tool:
+        cleaned = re.sub(r"```(?:json)?\s*$", "", buffer)
+        if cleaned:
+            yield cleaned
+
+
 def execute_tool_calls(
     calls: list[ToolCall],
     registry: ToolRegistry,

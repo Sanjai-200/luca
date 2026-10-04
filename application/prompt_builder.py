@@ -46,9 +46,11 @@ def build_system_prompt(
             'To use a tool, output a JSON block wrapped in <tool> tags. Example:\n'
             '<tool>{"name": "open_app", "args": {"target": "notepad.exe"}}</tool>\n\n'
             "CRITICAL RULES:\n"
-            "1. ONLY use tools if the user EXPLICITLY asks you to perform an action on the computer.\n"
-            "2. If the user just says hello or asks a question, reply with normal text. DO NOT open notepad to write your reply.\n"
-            "3. You can chain multiple <tool> tags if needed."
+            "1. For general conversation, questions, or greetings, reply directly with normal text. DO NOT use tools.\n"
+            "2. When asked to perform an action on the computer, you CAN and WILL execute it. NEVER claim you cannot interact with applications or run commands.\n"
+            "3. When executing an action, first give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss! Executing that now...'), followed immediately by the <tool> tags.\n"
+            "4. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
+            "5. You can chain multiple <tool> tags if needed."
         )
 
     # Inject learned rules
