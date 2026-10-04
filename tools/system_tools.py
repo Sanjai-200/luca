@@ -279,6 +279,90 @@ class TypeKeysTool(Tool):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+#  Press Key Tool
+# ═══════════════════════════════════════════════════════════════════════════
+
+class PressKeyTool(Tool):
+    """Simulate pressing a special keyboard key (e.g. Enter, Tab, Escape, Space)."""
+
+    _KEY_MAP = {
+        "enter": "{ENTER}",
+        "return": "{ENTER}",
+        "tab": "{TAB}",
+        "escape": "{ESC}",
+        "esc": "{ESC}",
+        "space": " ",
+        "backspace": "{BACKSPACE}",
+        "delete": "{DELETE}",
+        "del": "{DELETE}",
+        "up": "{UP}",
+        "down": "{DOWN}",
+        "left": "{LEFT}",
+        "right": "{RIGHT}",
+        "home": "{HOME}",
+        "end": "{END}",
+        "pageup": "{PGUP}",
+        "pagedown": "{PGDN}",
+    }
+
+    @property
+    def name(self) -> str:
+        return "press_key"
+
+    @property
+    def description(self) -> str:
+        return "Press a special key (e.g. 'enter', 'tab', 'esc', 'space', 'up', 'down'). Args: {\"key\": \"string\"}"
+
+    @property
+    def risk_level(self) -> RiskLevel:
+        return RiskLevel.MEDIUM
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name=self.name,
+            description=self.description,
+            risk_level=self.risk_level,
+            parameters={"key": {"type": "string", "required": True}},
+        )
+
+    def validate(self, **kwargs: Any) -> bool:
+        return bool(kwargs.get("key"))
+
+    def execute(self, **kwargs: Any) -> ToolResult:
+        raw_key = kwargs.get("key", "").strip().lower()
+        if not raw_key:
+            return ToolResult(success=False, error="No key provided")
+
+        send_key = self._KEY_MAP.get(raw_key)
+        if not send_key:
+            if len(raw_key) == 1:
+                send_key = raw_key
+            else:
+                return ToolResult(
+                    success=False,
+                    error=f"Unsupported key '{raw_key}'. Supported keys: {', '.join(sorted(self._KEY_MAP.keys()))}"
+                )
+
+        ps_script = (
+            "Start-Sleep -Milliseconds 200; "
+            "Add-Type -AssemblyName System.Windows.Forms; "
+            f"[System.Windows.Forms.SendKeys]::SendWait('{send_key}')"
+        )
+        logger.info("PressKeyTool pressing: %s -> %s", raw_key, send_key)
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                return ToolResult(success=True, output=f"Pressed {raw_key}")
+            return ToolResult(success=False, error=result.stderr.strip())
+        except Exception as exc:
+            return ToolResult(success=False, error=str(exc))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 #  Wait Tool
 # ═══════════════════════════════════════════════════════════════════════════
 

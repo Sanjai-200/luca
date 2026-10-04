@@ -161,3 +161,18 @@ class TestCloseAppTool:
         res = tool.execute(target="nonexistent_process_12345")
         assert res.success is True
         assert "not running" in res.output
+
+
+class TestPressKeyTool:
+    def test_press_key_spec(self):
+        from tools.system_tools import PressKeyTool
+        tool = PressKeyTool()
+        assert tool.name == "press_key"
+        assert tool.risk_level.value == "medium"
+        assert "key" in tool.spec.parameters
+
+    def test_press_key_validation(self):
+        from tools.system_tools import PressKeyTool
+        tool = PressKeyTool()
+        assert tool.validate(key="enter") is True
+        assert tool.validate(key="") is False
