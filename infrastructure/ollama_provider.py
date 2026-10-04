@@ -26,6 +26,8 @@ class OllamaProvider(AIProvider):
     Supports both blocking generation and real-time streaming.
     """
 
+    _DEFAULT_STOP = ["<|end|>", "<|user|>", "<|bot|>", "<|assistant|>", "<|endoftext|>", "Boss>"]
+
     def __init__(
         self,
         host: str = "http://localhost:11434",
@@ -71,6 +73,7 @@ class OllamaProvider(AIProvider):
             "options": {
                 "temperature": temperature or self._temperature,
                 "num_predict": max_tokens or self._max_tokens,
+                "stop": self._DEFAULT_STOP,
             },
         }
         try:
@@ -100,6 +103,7 @@ class OllamaProvider(AIProvider):
             "options": {
                 "temperature": temperature or self._temperature,
                 "num_predict": max_tokens or self._max_tokens,
+                "stop": self._DEFAULT_STOP,
             },
         }
         body = json.dumps(payload).encode("utf-8")

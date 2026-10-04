@@ -145,3 +145,19 @@ class TestSafety:
         # high risk -> ask
         res = pm.check("run_shell")
         assert res.decision is PermissionDecision.ASK
+
+
+class TestCloseAppTool:
+    def test_close_app_spec(self):
+        from tools.system_tools import CloseAppTool
+        tool = CloseAppTool()
+        assert tool.name == "close_app"
+        assert tool.risk_level.value == "low"
+        assert "target" in tool.spec.parameters
+
+    def test_close_app_not_running(self):
+        from tools.system_tools import CloseAppTool
+        tool = CloseAppTool()
+        res = tool.execute(target="nonexistent_process_12345")
+        assert res.success is True
+        assert "not running" in res.output

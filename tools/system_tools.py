@@ -74,7 +74,7 @@ class ShellTool(Tool):
 # ═══════════════════════════════════════════════════════════════════════════
 
 class OpenAppTool(Tool):
-    """Open an application or file using the Windows default handler."""
+    """Open an application, file, or URL using the Windows default handler."""
 
     @property
     def name(self) -> str:
@@ -82,7 +82,7 @@ class OpenAppTool(Tool):
 
     @property
     def description(self) -> str:
-        return "Open an application or file. Args: {\"target\": \"string\"}"
+        return "Open an application, file, or website URL. Args: {\"target\": \"string\"}"
 
     @property
     def risk_level(self) -> RiskLevel:
@@ -101,11 +101,33 @@ class OpenAppTool(Tool):
         return bool(kwargs.get("target"))
 
     def execute(self, **kwargs: Any) -> ToolResult:
-        target = kwargs.get("target", "")
+        target = kwargs.get("target", "").strip()
         if not target:
             return ToolResult(success=False, error="No target provided")
 
         logger.info("OpenAppTool opening: %s", target)
+
+        # Handle URLs directly
+        if target.startswith(("http://", "https://")):
+            try:
+                os.startfile(target)
+                return ToolResult(success=True, output=f"Opened {target}")
+            except Exception:
+                subprocess.Popen(["powershell", "-NoProfile", "-Command", f"Start-Process '{target}'"])
+                return ToolResult(success=True, output=f"Opened {target}")
+
+        # Handle target with arguments (e.g. 'notepad.exe helle.py')
+        if " " in target and not os.path.exists(target):
+            parts = target.split(" ", 1)
+            try:
+                subprocess.Popen(
+                    ["powershell", "-NoProfile", "-Command", f"Start-Process '{parts[0]}' -ArgumentList '{parts[1]}'"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                return ToolResult(success=True, output=f"Started {target}")
+            except Exception as exc:
+                return ToolResult(success=False, error=f"Failed to open {target}: {exc}")
+
         try:
             os.startfile(target)
             return ToolResult(success=True, output=f"Opened {target}")
@@ -118,6 +140,63 @@ class OpenAppTool(Tool):
                 return ToolResult(success=True, output=f"Started {target} via PowerShell")
             except Exception as exc:
                 return ToolResult(success=False, error=f"Failed to open {target}: {exc}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Close Application Tool
+# ═══════════════════════════════════════════════════════════════════════════
+
+class CloseAppTool(Tool):
+    """Close an application or terminate a process by name."""
+
+    @property
+    def name(self) -> str:
+        return "close_app"
+
+    @property
+    def description(self) -> str:
+        return "Close or terminate an application. Args: {\"target\": \"string\"}"
+
+    @property
+    def risk_level(self) -> RiskLevel:
+        return RiskLevel.LOW
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name=self.name,
+            description=self.description,
+            risk_level=self.risk_level,
+            parameters={"target": {"type": "string", "required": True}},
+        )
+
+    def validate(self, **kwargs: Any) -> bool:
+        return bool(kwargs.get("target"))
+
+    def execute(self, **kwargs: Any) -> ToolResult:
+        target = kwargs.get("target", "").strip()
+        if not target:
+            return ToolResult(success=False, error="No target provided")
+
+        proc_name = target[:-4] if target.lower().endswith(".exe") else target
+        logger.info("CloseAppTool closing: %s", proc_name)
+
+        ps_script = (
+            f"$p = Get-Process -Name '{proc_name}' -ErrorAction SilentlyContinue; "
+            f"if ($p) {{ $p | Stop-Process -Force; 'Closed {target}' }} "
+            f"else {{ 'Process {target} is not running' }}"
+        )
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                capture_output=True, text=True, timeout=10,
+            )
+            out = result.stdout.strip()
+            if result.returncode == 0:
+                return ToolResult(success=True, output=out or f"Closed {target}")
+            return ToolResult(success=False, error=result.stderr.strip() or f"Failed to close {target}")
+        except Exception as exc:
+            return ToolResult(success=False, error=str(exc))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
