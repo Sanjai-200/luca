@@ -131,8 +131,9 @@ class Orchestrator:
         if not stripped:
             return
 
-        # Fast intent classification (zero-latency regex)
-        intent_result = self._intent_classifier.classify(stripped)
+        # Intent classification (use LLM fallback if available)
+        classifier = self._llm_intent_classifier if getattr(self, "_llm_intent_classifier", None) else self._intent_classifier
+        intent_result = classifier.classify(stripped)
 
         # Status is handled locally — no LLM needed
         if intent_result.intent == IntentType.STATUS:
@@ -155,14 +156,16 @@ class Orchestrator:
 
         memory_context = self._get_memory_context(stripped)
 
-        # Build system prompt with tool specs
+        # Build system prompt with tool specs (only if action is intended)
+        active_tools = self._tools.list_specs() if intent_result.intent == IntentType.ACTION else None
+        
         sys_msg = build_system_prompt(
             self._assistant_name,
             self._user_title,
             self._personality,
             learned_rules=learned_rules_text,
             memory_context=memory_context,
-            tool_specs=self._tools.list_specs(),
+            tool_specs=active_tools,
         )
 
         # Assemble message list
