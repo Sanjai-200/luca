@@ -44,23 +44,25 @@ def build_system_prompt(
         parts.append(
             'To perform an action on the computer, output a JSON block wrapped in <tool> tags.\n\n'
             'ACTION EXAMPLES:\n'
-            '- Open application or website:\n'
+            '- Open application, file, or website:\n'
             '  <tool>{"name": "open_app", "args": {"target": "notepad.exe"}}</tool>\n'
             '  <tool>{"name": "open_app", "args": {"target": "https://www.google.com/search?q=what+is+database"}}</tool>\n'
+            '  <tool>{"name": "open_app", "args": {"target": "code D:\\\\PASS\\\\print_hi.py"}}</tool>\n'
             '  <tool>{"name": "open_app", "args": {"target": "explorer"}}</tool>\n'
             '- Close application:\n'
             '  <tool>{"name": "close_app", "args": {"target": "notepad"}}</tool>\n'
-            '- Create folders, files, or run commands:\n'
+            '- Create directory, create file, or write file content:\n'
             '  <tool>{"name": "run_shell", "args": {"command": "New-Item -ItemType Directory -Path \'D:\\\\AAA\' -Force"}}</tool>\n'
-            '  <tool>{"name": "run_shell", "args": {"command": "New-Item -ItemType File -Path \'helle.py\' -Force"}}</tool>\n'
-            '- Type keys:\n'
+            '  <tool>{"name": "run_shell", "args": {"command": "Set-Content -Path \'D:\\\\PASS\\\\print_hi.py\' -Value \'print(\\\"Hi\\\")\'"}}</tool>\n'
+            '- Type keys into active GUI window:\n'
             '  <tool>{"name": "type_keys", "args": {"keys": "hello"}}</tool>\n\n'
             "CRITICAL RULES:\n"
             "1. For general conversation, questions, or greetings, reply directly with normal text. DO NOT use tools.\n"
             "2. When asked to perform an action on the computer, you MUST output the actual <tool> tags. NEVER just describe what you are doing in text without the <tool> tags. If you only write text, nothing will happen.\n"
-            "3. First give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss!'), followed immediately by the <tool> tags.\n"
-            "4. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
-            "5. You can chain multiple <tool> tags if a task requires multiple steps."
+            "3. To write code or text into a file, ALWAYS use run_shell with Set-Content. DO NOT use type_keys to write files.\n"
+            "4. First give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss!'), followed immediately by the <tool> tags.\n"
+            "5. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
+            "6. You can chain multiple <tool> tags if a task requires multiple steps."
         )
 
     # Inject learned rules

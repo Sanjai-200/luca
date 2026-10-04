@@ -113,33 +113,32 @@ class OpenAppTool(Tool):
                 os.startfile(target)
                 return ToolResult(success=True, output=f"Opened {target}")
             except Exception:
-                subprocess.Popen(["powershell", "-NoProfile", "-Command", f"Start-Process '{target}'"])
+                pass
+
+        # Try os.startfile for local files/programs without arguments
+        if " " not in target and os.path.exists(target):
+            try:
+                os.startfile(target)
                 return ToolResult(success=True, output=f"Opened {target}")
+            except Exception:
+                pass
 
-        # Handle target with arguments (e.g. 'notepad.exe helle.py')
-        if " " in target and not os.path.exists(target):
-            parts = target.split(" ", 1)
-            try:
-                subprocess.Popen(
-                    ["powershell", "-NoProfile", "-Command", f"Start-Process '{parts[0]}' -ArgumentList '{parts[1]}'"],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-                return ToolResult(success=True, output=f"Started {target}")
-            except Exception as exc:
-                return ToolResult(success=False, error=f"Failed to open {target}: {exc}")
-
+        # Use cmd.exe /c start "" for all applications and commands (e.g. 'code', 'notepad', 'calc')
+        # completely detached so child application stdout/stderr never leaks into the console
         try:
-            os.startfile(target)
+            DETACHED = 0x00000008
+            CREATE_NEW_GROUP = 0x00000200
+            subprocess.Popen(
+                f'cmd.exe /c start "" {target}',
+                shell=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=DETACHED | CREATE_NEW_GROUP,
+            )
             return ToolResult(success=True, output=f"Opened {target}")
-        except Exception:
-            try:
-                subprocess.Popen(
-                    ["powershell", "-NoProfile", "-Command", f"Start-Process '{target}'"],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-                return ToolResult(success=True, output=f"Started {target} via PowerShell")
-            except Exception as exc:
-                return ToolResult(success=False, error=f"Failed to open {target}: {exc}")
+        except Exception as exc:
+            return ToolResult(success=False, error=f"Failed to open {target}: {exc}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
