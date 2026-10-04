@@ -28,6 +28,12 @@ Transformed legacy procedural/monolithic structure into a clean, modular, extens
 - Resolved `phi3:mini` issue where casual inputs ("hi", "who are you") triggered unnecessary tool calls (e.g. launching Notepad).
 - Tuned `application/prompt_builder.py` with strict negative constraints ("DO NOT call tools for conversational queries") and restored general Q&A capabilities.
 
+### 4. Clean Stream Rendering & Natural Action Execution (COMPLETE)
+- **Action Acknowledgment**: Instructed prompt to respond naturally (e.g., "I will execute that for you, Boss...") instead of displaying model safety disclaimers like "I cannot directly interact with applications".
+- **Stream Filtering**: Added `filter_stream_tool_tags` in `application/tool_parser.py` to strip `<tool>JSON</tool>` blocks and markdown fences in real-time, preventing raw protocol JSON from leaking into the user console.
+- **Clean Console Output**: Redirected INFO logging to `logs/luca.log` during interactive CLI chat so logger timestamps do not disrupt conversational UI.
+- All 58 unit tests passing.
+
 ---
 
 ## Known Issues & Ongoing Work
