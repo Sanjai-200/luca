@@ -69,7 +69,8 @@ def build_system_prompt(
             "6. To run a terminal/shell command (like 'ls', 'dir', 'ping') and see its output, ALWAYS use run_shell. DO NOT use open_app for shell commands.\n"
             "7. First give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss!'), followed immediately by the <tool> tags.\n"
             "8. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
-            "9. You can chain multiple <tool> tags if a task requires multiple steps."
+            "9. You can chain multiple <tool> tags if a task requires multiple steps.\n"
+            "10. NEVER simulate the user's responses. NEVER generate examples or ask yourself questions. Stop generating immediately after your reply."
         )
 
     # Inject learned rules

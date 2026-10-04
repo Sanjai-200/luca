@@ -130,7 +130,8 @@ class OpenAppTool(Tool):
             os.path.expandvars(r"%PUBLIC%\Desktop"),
         ]
         
-        app_name_lower = app_name.lower().replace(".exe", "")
+        # Normalize the requested app name (remove .exe, replace hyphens/underscores with spaces)
+        app_name_clean = app_name.lower().replace(".exe", "").replace("-", " ").replace("_", " ").strip()
         
         for base_path in search_paths:
             if not os.path.exists(base_path):
@@ -138,8 +139,8 @@ class OpenAppTool(Tool):
             for root, _, files in os.walk(base_path):
                 for file in files:
                     if file.lower().endswith(".lnk"):
-                        name_without_ext = file[:-4].lower()
-                        if app_name_lower in name_without_ext:
+                        name_without_ext = file[:-4].lower().replace("-", " ").replace("_", " ")
+                        if app_name_clean in name_without_ext or name_without_ext in app_name_clean:
                             return os.path.join(root, file)
         return None
 
