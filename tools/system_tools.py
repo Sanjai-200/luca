@@ -121,6 +121,28 @@ class OpenAppTool(Tool):
         "zoom": "zoommtg:",
     }
 
+    def _search_for_shortcut(self, app_name: str) -> str | None:
+        """Search the Start Menu and Desktop for a shortcut matching the app name."""
+        search_paths = [
+            os.path.expandvars(r"%ProgramData%\Microsoft\Windows\Start Menu\Programs"),
+            os.path.expandvars(r"%AppData%\Microsoft\Windows\Start Menu\Programs"),
+            os.path.expandvars(r"%USERPROFILE%\Desktop"),
+            os.path.expandvars(r"%PUBLIC%\Desktop"),
+        ]
+        
+        app_name_lower = app_name.lower().replace(".exe", "")
+        
+        for base_path in search_paths:
+            if not os.path.exists(base_path):
+                continue
+            for root, _, files in os.walk(base_path):
+                for file in files:
+                    if file.lower().endswith(".lnk"):
+                        name_without_ext = file[:-4].lower()
+                        if app_name_lower in name_without_ext:
+                            return os.path.join(root, file)
+        return None
+
     def execute(self, **kwargs: Any) -> ToolResult:
         target = kwargs.get("target", "").strip()
         if not target:
@@ -147,6 +169,16 @@ class OpenAppTool(Tool):
                 return ToolResult(success=True, output=f"Opened {target}")
             except Exception:
                 pass
+
+        # Search for Start Menu/Desktop shortcuts
+        shortcut_path = self._search_for_shortcut(target)
+        if shortcut_path:
+            logger.info("OpenAppTool found shortcut: %s", shortcut_path)
+            try:
+                os.startfile(shortcut_path)
+                return ToolResult(success=True, output=f"Opened {target} via shortcut")
+            except Exception as exc:
+                logger.warning("Failed to open shortcut %s: %s", shortcut_path, exc)
 
         # Use cmd.exe /c start "" for all applications and commands (e.g. 'code', 'notepad', 'calc')
         # completely detached so child application stdout/stderr never leaks into the console
