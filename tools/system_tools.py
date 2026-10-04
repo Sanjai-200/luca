@@ -151,12 +151,37 @@ class TypeKeysTool(Tool):
     def validate(self, **kwargs: Any) -> bool:
         return bool(kwargs.get("keys"))
 
+    @staticmethod
+    def _escape_sendkeys(text: str) -> str:
+        """Escape characters so SendKeys treats them as literal characters, not hotkeys."""
+        specials = {
+            "{": "{{}",
+            "}": "{}}",
+            "+": "{+}",
+            "^": "{^}",
+            "%": "{%}",
+            "~": "{~}",
+            "(": "{(}",
+            ")": "{)}",
+            "[": "{[}",
+            "]": "{]}",
+        }
+        escaped = []
+        for ch in text:
+            if ch in specials:
+                escaped.append(specials[ch])
+            elif ch == "'":
+                escaped.append("''")
+            else:
+                escaped.append(ch)
+        return "".join(escaped)
+
     def execute(self, **kwargs: Any) -> ToolResult:
         keys = kwargs.get("keys", "")
         if not keys:
             return ToolResult(success=False, error="No keys provided")
 
-        safe_keys = keys.replace("'", "''")
+        safe_keys = self._escape_sendkeys(keys)
         ps_script = (
             "Start-Sleep -Milliseconds 500; "
             "Add-Type -AssemblyName System.Windows.Forms; "
