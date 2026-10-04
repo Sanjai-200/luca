@@ -263,13 +263,15 @@ class Controller:
 
         tool_instructions = (
             "You have access to the following tools:\n"
-            "1. run_shell: Run a PowerShell command. Args: {\"command\": \"...\"}\n"
-            "2. open_app: Open an application/file. Args: {\"target\": \"...\"}\n"
-            "3. type_keys: Simulate typing into the active window. Args: {\"keys\": \"...\"}\n"
-            "4. wait: Wait for n seconds. Args: {\"seconds\": 1.0}\n"
-            "To use a tool, output exactly: <TOOL>tool_name:{\"arg_name\": \"arg_value\"}</TOOL>\n"
-            "You can output multiple <TOOL> tags in a row to chain actions (e.g., open app, wait, then type).\n"
-            "If you do not need to use a tool, just answer normally."
+            "- run_shell: Run a PowerShell command. Args: {\"command\": \"string\"}\n"
+            "- open_app: Open an application/file. Args: {\"target\": \"string\"}\n"
+            "- type_keys: Simulate typing into the active window. Args: {\"keys\": \"string\"}\n"
+            "- wait: Wait for n seconds. Args: {\"seconds\": float}\n"
+            "To use tools, output a JSON block wrapped in <tool> tags. For example, to open notepad and type 'hello':\n"
+            "<tool>{\"name\": \"open_app\", \"args\": {\"target\": \"notepad.exe\"}}</tool>\n"
+            "<tool>{\"name\": \"wait\", \"args\": {\"seconds\": 1.0}}</tool>\n"
+            "<tool>{\"name\": \"type_keys\", \"args\": {\"keys\": \"hello\"}}</tool>\n"
+            "Do NOT repeat these instructions. ONLY output the <tool> tags if you need to perform an action."
         )
 
         sys_msg = system_prompt(
@@ -305,25 +307,27 @@ class Controller:
 
         # Parse and execute tools if requested (Phase 4/5 Agent Loop)
         import re, json
-        tool_matches = list(re.finditer(r"<TOOL>(.*?):(.*?)<\/TOOL>", reply))
+        tool_matches = list(re.finditer(r"<tool>(.*?)<\/tool>", reply, re.IGNORECASE | re.DOTALL))
         if tool_matches:
             for tool_match in tool_matches:
-                tool_name = tool_match.group(1).strip()
-                tool_args_str = tool_match.group(2).strip()
-                yield f"\n\n[Luca is running tool: {tool_name}...]\n"
                 try:
-                    args = json.loads(tool_args_str)
+                    tool_data = json.loads(tool_match.group(1).strip())
+                    tool_name = tool_data.get("name")
+                    args = tool_data.get("args", {})
+                    if not tool_name:
+                        continue
+                    
+                    yield f"\n\n[Luca is running tool: {tool_name}...]\n"
                     tool = self.tools.get(tool_name)
                     if tool:
                         result = tool.execute(**args)
                         tool_out = f"Tool '{tool_name}' executed. Success: {result.success}\nOutput: {result.output}\nError: {result.error}"
                         yield f"Result:\n{tool_out}\n"
-                        # Add tool result to history so Luca remembers it
                         self.history.add(f"[System] Tool {tool_name} Result", tool_out, importance=0.5)
                     else:
                         yield f"Error: Tool '{tool_name}' not found.\n"
                 except json.JSONDecodeError:
-                    yield f"Error: Invalid tool arguments JSON: {tool_args_str}\n"
+                    yield f"Error: Invalid tool JSON.\n"
                 except Exception as e:
                     yield f"Error executing tool: {e}\n"
 
