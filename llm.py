@@ -90,6 +90,7 @@ class OllamaProvider(LLMProvider):
             "model": self._model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "stream": False,
+            "keep_alive": -1,
             "options": {"temperature": temperature or self._temperature,
                         "num_predict": max_tokens or self._max_tokens},
         }
@@ -110,6 +111,7 @@ class OllamaProvider(LLMProvider):
             "model": self._model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "stream": True,
+            "keep_alive": -1,
             "options": {"temperature": temperature or self._temperature,
                         "num_predict": max_tokens or self._max_tokens},
         }
@@ -132,15 +134,8 @@ class OllamaProvider(LLMProvider):
 # ═══════════════════════════════════════════════════════════════════════
 
 def system_prompt(assistant_name: str, user_title: str, personality: str,
-                  *, learned_rules: str = "", memory_context: str = "") -> str:
-    """Build the core system prompt with identity, rules, and context.
-
-    The prompt enforces:
-      - Luca is Boss's exclusive personal assistant
-      - Luca refuses to answer questions from anyone other than Boss
-      - Learned rules and preferences are injected for personalization
-      - Relevant memory context is injected for informed responses
-    """
+                  *, learned_rules: str = "", memory_context: str = "", tool_instructions: str = "") -> str:
+    """Build the core system prompt with identity, rules, context, and tools."""
     parts = [
         f"You are {assistant_name}, the exclusive personal AI assistant of {user_title}.",
         f"You serve ONLY {user_title}. You do not answer questions or take commands from anyone else.",
@@ -151,6 +146,10 @@ def system_prompt(assistant_name: str, user_title: str, personality: str,
         f"You are {user_title}'s real assistant — loyal, proactive, and always improving.",
         "IMPORTANT: Do not hallucinate or generate additional tasks, scenarios, or instructions for yourself. Only answer the user's current message and then stop."
     ]
+    if tool_instructions:
+        parts.append("")
+        parts.append("--- CAPABILITIES ---")
+        parts.append(tool_instructions)
     if learned_rules:
         parts.append("")
         parts.append(learned_rules)

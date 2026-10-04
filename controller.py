@@ -27,6 +27,7 @@ from memory import MemoryCategory, MemoryManager, SQLiteMemoryStore
 from safety import PermissionManager
 from state import AppState, StateManager
 from tools import ToolRegistry
+from luca_tools import ShellTool, OpenAppTool
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,10 @@ class Controller:
             self._llm_intent_classifier = LLMIntentClassifier(
                 self._llm, self._intent_classifier
             )
+
+        # Register Core Tools
+        self.tools.register(ShellTool())
+        self.tools.register(OpenAppTool())
 
         # Purge old conversations on startup (keeps DB clean)
         self.conversation_store.purge_old_conversations()
@@ -254,12 +259,21 @@ class Controller:
 
         memory_context = self._get_memory_context(stripped)
 
+        tool_instructions = (
+            "You have access to the following tools:\n"
+            "1. run_shell: Run a PowerShell command. Args: {\"command\": \"...\"}\n"
+            "2. open_app: Open an application/file. Args: {\"target\": \"...\"}\n"
+            "To use a tool, output exactly: <TOOL>tool_name:{\"arg_name\": \"arg_value\"}</TOOL>\n"
+            "If you do not need to use a tool, just answer normally."
+        )
+
         sys_msg = system_prompt(
             self.identity.assistant_name,
             self.identity.user_title,
             self.identity.personality,
             learned_rules=learned_rules_text,
             memory_context=memory_context,
+            tool_instructions=tool_instructions
         )
 
         messages: list[Message] = [Message("system", sys_msg)]
@@ -283,6 +297,29 @@ class Controller:
         reply = "".join(chunks)
         importance = 0.7 if is_feedback else 0.3
         turn = self.history.add(stripped, reply, importance=importance)
+
+        # Parse and execute tool if requested (Phase 4/5 Agent Loop)
+        import re, json
+        tool_match = re.search(r"<TOOL>(.*?):(.*?)<\/TOOL>", reply)
+        if tool_match:
+            tool_name = tool_match.group(1).strip()
+            tool_args_str = tool_match.group(2).strip()
+            yield f"\n\n[Luca is running tool: {tool_name}...]\n"
+            try:
+                args = json.loads(tool_args_str)
+                tool = self.tools.get(tool_name)
+                if tool:
+                    result = tool.execute(**args)
+                    tool_out = f"Tool '{tool_name}' executed. Success: {result.success}\nOutput: {result.output}\nError: {result.error}"
+                    yield f"Result:\n{tool_out}\n"
+                    # Add tool result to history so Luca remembers it
+                    self.history.add(f"[System] Tool {tool_name} Result", tool_out, importance=0.5)
+                else:
+                    yield f"Error: Tool '{tool_name}' not found.\n"
+            except json.JSONDecodeError:
+                yield f"Error: Invalid tool arguments JSON: {tool_args_str}\n"
+            except Exception as e:
+                yield f"Error executing tool: {e}\n"
 
         # Async background learning
         self._evaluate_and_learn_async(stripped, reply, turn, is_feedback=is_feedback)
