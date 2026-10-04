@@ -395,3 +395,70 @@ class WaitTool(Tool):
         seconds = float(kwargs.get("seconds", 1.0))
         time.sleep(seconds)
         return ToolResult(success=True, output=f"Waited {seconds}s")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Search Web Tool
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SearchWebTool(Tool):
+    """Search Google or YouTube in the default browser without URL hallucination."""
+
+    @property
+    def name(self) -> str:
+        return "search_web"
+
+    @property
+    def description(self) -> str:
+        return "Search Google or YouTube in the web browser. Args: {\"query\": \"string\", \"site\": \"google|youtube\"}"
+
+    @property
+    def risk_level(self) -> RiskLevel:
+        return RiskLevel.LOW
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name=self.name,
+            description=self.description,
+            risk_level=self.risk_level,
+            parameters={
+                "query": {"type": "string", "required": True},
+                "site": {"type": "string", "required": False},
+            },
+        )
+
+    def validate(self, **kwargs: Any) -> bool:
+        return bool(kwargs.get("query"))
+
+    def execute(self, **kwargs: Any) -> ToolResult:
+        import urllib.parse
+        query = kwargs.get("query", "").strip()
+        if not query:
+            return ToolResult(success=False, error="No search query provided")
+
+        site = kwargs.get("site", "google").strip().lower()
+        encoded = urllib.parse.quote_plus(query)
+
+        if "youtube" in site:
+            url = f"https://www.youtube.com/results?search_query={encoded}"
+        else:
+            url = f"https://www.google.com/search?q={encoded}"
+
+        logger.info("SearchWebTool opening %s search for: %s", site, query)
+        try:
+            os.startfile(url)
+            return ToolResult(success=True, output=f"Opened {site} search for '{query}'")
+        except Exception:
+            try:
+                subprocess.Popen(
+                    f'cmd.exe /c start "" "{url}"',
+                    shell=False,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=0x00000008 | 0x00000200,
+                )
+                return ToolResult(success=True, output=f"Opened {site} search for '{query}'")
+            except Exception as exc:
+                return ToolResult(success=False, error=f"Failed to open browser: {exc}")

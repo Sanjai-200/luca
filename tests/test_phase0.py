@@ -176,3 +176,18 @@ class TestPressKeyTool:
         tool = PressKeyTool()
         assert tool.validate(key="enter") is True
         assert tool.validate(key="") is False
+
+
+class TestSearchWebTool:
+    def test_search_web_spec(self):
+        from tools.system_tools import SearchWebTool
+        tool = SearchWebTool()
+        assert tool.name == "search_web"
+        assert tool.risk_level.value == "low"
+        assert "query" in tool.spec.parameters
+
+    def test_search_web_validation(self):
+        from tools.system_tools import SearchWebTool
+        tool = SearchWebTool()
+        assert tool.validate(query="foods") is True
+        assert tool.validate(query="") is False

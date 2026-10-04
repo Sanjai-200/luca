@@ -19,7 +19,7 @@ from infrastructure.sqlite_memory import SQLiteMemoryStore
 from application.memory_manager import MemoryManager
 from application.orchestrator import Orchestrator
 from tools.registry import ToolRegistry
-from tools.system_tools import ShellTool, OpenAppTool, CloseAppTool, TypeKeysTool, PressKeyTool, WaitTool
+from tools.system_tools import ShellTool, OpenAppTool, CloseAppTool, TypeKeysTool, PressKeyTool, WaitTool, SearchWebTool
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +158,7 @@ def create_orchestrator(config: LucaConfig | None = None) -> Orchestrator:
     tool_registry.register(TypeKeysTool())
     tool_registry.register(PressKeyTool())
     tool_registry.register(WaitTool())
+    tool_registry.register(SearchWebTool())
 
     # 4. Assemble the Orchestrator (all dependencies injected)
     orchestrator = Orchestrator(

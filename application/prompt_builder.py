@@ -25,7 +25,7 @@ def build_system_prompt(
     parts = [
         f"You are {assistant_name}, the personal AI assistant of {user_title}.",
         f"Your personality is: {personality}.",
-        f"Address the user as '{user_title}'.",
+        f"Address the user as '{user_title}'. ALWAYS call the user '{user_title}'. NEVER use any other name.",
         "Answer clearly and concisely. You can answer general knowledge questions, help with coding, and control the computer.",
         "IMPORTANT: Only answer the user's current message and then stop.",
     ]
@@ -44,10 +44,11 @@ def build_system_prompt(
         parts.append(
             'To perform an action on the computer, output a JSON block wrapped in <tool> tags.\n\n'
             'ACTION EXAMPLES:\n'
-            '- Open application, file, or search website:\n'
+            '- Search YouTube or Google:\n'
+            '  <tool>{"name": "search_web", "args": {"query": "foods", "site": "youtube"}}</tool>\n'
+            '  <tool>{"name": "search_web", "args": {"query": "what is database", "site": "google"}}</tool>\n'
+            '- Open application, file, or website:\n'
             '  <tool>{"name": "open_app", "args": {"target": "notepad.exe"}}</tool>\n'
-            '  <tool>{"name": "open_app", "args": {"target": "https://www.google.com/search?q=what+is+database"}}</tool>\n'
-            '  <tool>{"name": "open_app", "args": {"target": "https://www.youtube.com/results?search_query=foods"}}</tool>\n'
             '  <tool>{"name": "open_app", "args": {"target": "code D:\\\\PASS\\\\print_hi.py"}}</tool>\n'
             '  <tool>{"name": "open_app", "args": {"target": "explorer"}}</tool>\n'
             '- Close application:\n'
@@ -63,7 +64,7 @@ def build_system_prompt(
             "1. For general conversation, questions, or greetings, reply directly with normal text. DO NOT use tools.\n"
             "2. When asked to perform an action on the computer, you MUST output the actual <tool> tags. NEVER just describe what you are doing in text without the <tool> tags. If you only write text, nothing will happen.\n"
             "3. ONLY use tools that are registered above. NEVER invent or hallucinate non-existent tools (e.g. do not invent select_option).\n"
-            "4. To search YouTube or Google, ALWAYS use open_app with the direct search URL.\n"
+            "4. To search YouTube or Google, ALWAYS use search_web. DO NOT construct raw search URLs manually.\n"
             "5. To write code or text into a file, ALWAYS use run_shell with Set-Content. DO NOT use type_keys to write files.\n"
             "6. First give a brief friendly response acknowledging the task (e.g. 'I will execute the task for you, Boss. Please wait a moment...' or 'On it, Boss!'), followed immediately by the <tool> tags.\n"
             "7. Output <tool> tags directly. DO NOT wrap <tool> tags in markdown code fences.\n"
