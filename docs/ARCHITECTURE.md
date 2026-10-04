@@ -46,32 +46,45 @@ Fast response              Permission/Safety
                     TTS + Luca Character
 ```
 
-## 2. Core modules (flat structure at project root)
+## 2. Core modules (layered OOP architecture)
 
 ```text
 D:\PA\luca\
-├── main.py              Entry point (--check / interactive loop)
-├── config.py            All settings, identity loader, sub-configs
-├── controller.py        Central orchestrator — wires everything together
-├── state.py             Thread-safe observable state machine
-├── intent.py            Two-stage intent classifier (keyword + LLM fallback)
-├── conversation.py      Rolling history buffer + persistent conversation store
-├── learning.py          LLM-driven feedback evaluator + permanent learned rules
-├── llm.py               LLMProvider ABC + OllamaProvider + prompt templates
-├── memory.py            MemoryStore ABC + SQLiteMemoryStore + MemoryManager
-├── safety.py            Risk classification + command validation + permissions
-├── tools.py             Tool ABC + ToolRegistry
-├── identity.yaml        Configurable assistant/user identity
-├── requirements.txt     Dependencies (pytest only for core)
-├── tests/
-│   ├── test_phase0.py   Phase 0 foundation tests (33 tests)
-│   └── test_phase1.py   Phase 1 conversation/intent/learning tests (40+ tests)
-├── scripts/             PowerShell dev scripts
-├── docs/                Project documentation
-├── user_data/           SQLite DB, user preferences (gitignored)
-├── models/              Local model files (gitignored)
-└── logs/                Runtime logs (gitignored)
+├── main.py                          Entry point (--check / interactive loop)
+├── identity.yaml                    Configurable assistant/user identity
+├── requirements.txt                 Dependencies
+├── core/                            Domain entities & interfaces
+│   ├── interfaces.py                ABCs: AIProvider, MemoryStore, Tool, etc.
+│   └── exceptions.py               Domain exceptions
+├── infrastructure/                  Concrete implementations
+│   ├── ollama_provider.py           Ollama HTTP transport
+│   └── sqlite_memory.py            SQLite memory backend
+├── tools/                           Extensible tool system
+│   ├── registry.py                  ToolRegistry (discovery & lookup)
+│   └── system_tools.py             ShellTool, OpenAppTool, CloseAppTool,
+│                                    TypeKeysTool, PressKeyTool, WaitTool,
+│                                    SearchWebTool (Win32 SendInput for keyboard)
+├── application/                     Use cases & orchestration
+│   ├── orchestrator.py              Central coordinator (wires subsystems)
+│   ├── prompt_builder.py            System prompt construction
+│   ├── tool_parser.py               Parse <tool>JSON</tool> & stream filtering
+│   ├── intent_router.py             Keyword + LLM intent classification
+│   ├── conversation.py              Rolling buffer + persistent store
+│   ├── memory_manager.py            Memory facade over MemoryStore
+│   └── learning.py                  Feedback evaluator + learned rules
+├── app/                             Dependency injection
+│   └── bootstrap.py                 Configuration + composition root
+├── security/                        Safety pipeline (risk classification)
+├── tests/                           Test suite
+│   ├── test_phase0.py               Foundation tests (18 tests)
+│   └── test_phase1.py               Conversation/intent/learning tests (46 tests)
+├── scripts/                         PowerShell dev scripts
+├── docs/                            Project documentation
+├── user_data/                       SQLite DB, user preferences (gitignored)
+├── models/                          Local model files (gitignored)
+└── logs/                            Runtime logs (gitignored)
 ```
+
 
 
 ## 3. Replaceable providers
