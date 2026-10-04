@@ -64,3 +64,60 @@ class OpenAppTool(Tool):
             except Exception as e2:
                 return ToolResult(success=False, error=f"Failed to open {target}: {e2}")
 
+class TypeKeysTool(Tool):
+    @property
+    def name(self) -> str:
+        return "type_keys"
+
+    @property
+    def description(self) -> str:
+        return "Simulate keyboard typing into the currently active window."
+
+    @property
+    def risk_level(self) -> RiskLevel:
+        return RiskLevel.MEDIUM
+
+    def execute(self, **kwargs: Any) -> ToolResult:
+        keys = kwargs.get("keys", "")
+        if not keys:
+            return ToolResult(success=False, error="No keys provided")
+        
+        # Escape single quotes for PowerShell
+        safe_keys = keys.replace("'", "''")
+        
+        # We add a tiny delay to ensure the window has focus before typing
+        ps_script = f"""
+        Start-Sleep -Milliseconds 500
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.SendKeys]::SendWait('{safe_keys}')
+        """
+        try:
+            result = subprocess.run(["powershell", "-Command", ps_script], 
+                                    capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                return ToolResult(success=True, output=f"Successfully typed: {keys}")
+            return ToolResult(success=False, error=result.stderr.strip())
+        except Exception as e:
+            return ToolResult(success=False, error=str(e))
+
+class WaitTool(Tool):
+    @property
+    def name(self) -> str:
+        return "wait"
+
+    @property
+    def description(self) -> str:
+        return "Wait for a specific number of seconds."
+
+    @property
+    def risk_level(self) -> RiskLevel:
+        return RiskLevel.LOW
+
+    def execute(self, **kwargs: Any) -> ToolResult:
+        import time
+        seconds = kwargs.get("seconds", 1.0)
+        try:
+            time.sleep(float(seconds))
+            return ToolResult(success=True, output=f"Waited for {seconds} seconds.")
+        except Exception as e:
+            return ToolResult(success=False, error=str(e))

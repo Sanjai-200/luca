@@ -27,7 +27,7 @@ from memory import MemoryCategory, MemoryManager, SQLiteMemoryStore
 from safety import PermissionManager
 from state import AppState, StateManager
 from tools import ToolRegistry
-from luca_tools import ShellTool, OpenAppTool
+from luca_tools import ShellTool, OpenAppTool, TypeKeysTool, WaitTool
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,8 @@ class Controller:
         # Register Core Tools
         self.tools.register(ShellTool())
         self.tools.register(OpenAppTool())
+        self.tools.register(TypeKeysTool())
+        self.tools.register(WaitTool())
 
         # Purge old conversations on startup (keeps DB clean)
         self.conversation_store.purge_old_conversations()
@@ -263,7 +265,10 @@ class Controller:
             "You have access to the following tools:\n"
             "1. run_shell: Run a PowerShell command. Args: {\"command\": \"...\"}\n"
             "2. open_app: Open an application/file. Args: {\"target\": \"...\"}\n"
+            "3. type_keys: Simulate typing into the active window. Args: {\"keys\": \"...\"}\n"
+            "4. wait: Wait for n seconds. Args: {\"seconds\": 1.0}\n"
             "To use a tool, output exactly: <TOOL>tool_name:{\"arg_name\": \"arg_value\"}</TOOL>\n"
+            "You can output multiple <TOOL> tags in a row to chain actions (e.g., open app, wait, then type).\n"
             "If you do not need to use a tool, just answer normally."
         )
 
@@ -298,28 +303,29 @@ class Controller:
         importance = 0.7 if is_feedback else 0.3
         turn = self.history.add(stripped, reply, importance=importance)
 
-        # Parse and execute tool if requested (Phase 4/5 Agent Loop)
+        # Parse and execute tools if requested (Phase 4/5 Agent Loop)
         import re, json
-        tool_match = re.search(r"<TOOL>(.*?):(.*?)<\/TOOL>", reply)
-        if tool_match:
-            tool_name = tool_match.group(1).strip()
-            tool_args_str = tool_match.group(2).strip()
-            yield f"\n\n[Luca is running tool: {tool_name}...]\n"
-            try:
-                args = json.loads(tool_args_str)
-                tool = self.tools.get(tool_name)
-                if tool:
-                    result = tool.execute(**args)
-                    tool_out = f"Tool '{tool_name}' executed. Success: {result.success}\nOutput: {result.output}\nError: {result.error}"
-                    yield f"Result:\n{tool_out}\n"
-                    # Add tool result to history so Luca remembers it
-                    self.history.add(f"[System] Tool {tool_name} Result", tool_out, importance=0.5)
-                else:
-                    yield f"Error: Tool '{tool_name}' not found.\n"
-            except json.JSONDecodeError:
-                yield f"Error: Invalid tool arguments JSON: {tool_args_str}\n"
-            except Exception as e:
-                yield f"Error executing tool: {e}\n"
+        tool_matches = list(re.finditer(r"<TOOL>(.*?):(.*?)<\/TOOL>", reply))
+        if tool_matches:
+            for tool_match in tool_matches:
+                tool_name = tool_match.group(1).strip()
+                tool_args_str = tool_match.group(2).strip()
+                yield f"\n\n[Luca is running tool: {tool_name}...]\n"
+                try:
+                    args = json.loads(tool_args_str)
+                    tool = self.tools.get(tool_name)
+                    if tool:
+                        result = tool.execute(**args)
+                        tool_out = f"Tool '{tool_name}' executed. Success: {result.success}\nOutput: {result.output}\nError: {result.error}"
+                        yield f"Result:\n{tool_out}\n"
+                        # Add tool result to history so Luca remembers it
+                        self.history.add(f"[System] Tool {tool_name} Result", tool_out, importance=0.5)
+                    else:
+                        yield f"Error: Tool '{tool_name}' not found.\n"
+                except json.JSONDecodeError:
+                    yield f"Error: Invalid tool arguments JSON: {tool_args_str}\n"
+                except Exception as e:
+                    yield f"Error executing tool: {e}\n"
 
         # Async background learning
         self._evaluate_and_learn_async(stripped, reply, turn, is_feedback=is_feedback)
