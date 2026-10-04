@@ -100,15 +100,40 @@ class OpenAppTool(Tool):
     def validate(self, **kwargs: Any) -> bool:
         return bool(kwargs.get("target"))
 
+    _UWP_MAP = {
+        "whatsapp": "whatsapp:",
+        "spotify": "spotify:",
+        "netflix": "netflix:",
+        "settings": "ms-settings:",
+        "calculator": "calculator:",
+        "paint": "ms-paint:",
+        "mail": "mailto:",
+        "camera": "microsoft.windows.camera:",
+        "maps": "bingmaps:",
+        "store": "ms-windows-store:",
+        "photos": "ms-photos:",
+        "clock": "ms-clock:",
+        "calendar": "outlookcal:",
+        "weather": "bingweather:",
+        "news": "bingnews:",
+        "xbox": "xbox:",
+        "discord": "discord:",
+        "zoom": "zoommtg:",
+    }
+
     def execute(self, **kwargs: Any) -> ToolResult:
         target = kwargs.get("target", "").strip()
         if not target:
             return ToolResult(success=False, error="No target provided")
 
+        lower_target = target.lower()
+        if lower_target in self._UWP_MAP:
+            target = self._UWP_MAP[lower_target]
+
         logger.info("OpenAppTool opening: %s", target)
 
-        # Handle URLs directly
-        if target.startswith(("http://", "https://")):
+        # Handle URLs and protocols directly
+        if target.startswith(("http://", "https://")) or target.endswith(":"):
             try:
                 os.startfile(target)
                 return ToolResult(success=True, output=f"Opened {target}")
