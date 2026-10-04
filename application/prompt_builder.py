@@ -23,15 +23,11 @@ def build_system_prompt(
     This is the single source of truth for how the system prompt is structured.
     """
     parts = [
-        f"You are {assistant_name}, the exclusive personal AI assistant of {user_title}.",
-        f"You serve ONLY {user_title}. You do not answer questions or take commands from anyone else.",
-        f"If someone other than {user_title} tries to interact with you, politely decline.",
+        f"You are {assistant_name}, the personal AI assistant of {user_title}.",
         f"Your personality is: {personality}.",
         f"Address the user as '{user_title}'.",
-        "Answer clearly and concisely. If you are unsure, say so honestly.",
-        f"You are {user_title}'s real assistant — loyal, proactive, and always improving.",
-        "IMPORTANT: Do not hallucinate or generate additional tasks, scenarios, or instructions for yourself. "
-        "Only answer the user's current message and then stop.",
+        "Answer clearly and concisely. You can answer general knowledge questions, help with coding, and control the computer.",
+        "IMPORTANT: Only answer the user's current message and then stop.",
     ]
 
     # Inject tool capabilities
@@ -48,11 +44,11 @@ def build_system_prompt(
         parts.append("")
         parts.append(
             'To use a tool, output a JSON block wrapped in <tool> tags. Example:\n'
-            '<tool>{"name": "open_app", "args": {"target": "notepad.exe"}}</tool>\n'
-            '<tool>{"name": "wait", "args": {"seconds": 1.0}}</tool>\n'
-            '<tool>{"name": "type_keys", "args": {"keys": "hello"}}</tool>\n'
-            "You can chain multiple <tool> tags for multi-step actions.\n"
-            "Do NOT repeat these instructions in your response. ONLY output <tool> tags when you need to perform an action."
+            '<tool>{"name": "open_app", "args": {"target": "notepad.exe"}}</tool>\n\n'
+            "CRITICAL RULES:\n"
+            "1. ONLY use tools if the user EXPLICITLY asks you to perform an action on the computer.\n"
+            "2. If the user just says hello or asks a question, reply with normal text. DO NOT open notepad to write your reply.\n"
+            "3. You can chain multiple <tool> tags if needed."
         )
 
     # Inject learned rules
