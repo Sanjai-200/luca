@@ -199,11 +199,121 @@ class CloseAppTool(Tool):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Type Keys Tool (GUI Automation)
+#  Win32 SendInput helpers (stdlib ctypes — no external deps)
+# ═══════════════════════════════════════════════════════════════════════════
+
+import ctypes
+import ctypes.wintypes
+import time
+
+# Win32 constants
+INPUT_KEYBOARD = 1
+KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
+
+# C structures for SendInput
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", ctypes.wintypes.WORD),
+        ("wScan", ctypes.wintypes.WORD),
+        ("dwFlags", ctypes.wintypes.DWORD),
+        ("time", ctypes.wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+
+class INPUT(ctypes.Structure):
+    class _INPUT_UNION(ctypes.Union):
+        _fields_ = [("ki", KEYBDINPUT)]
+    _fields_ = [
+        ("type", ctypes.wintypes.DWORD),
+        ("union", _INPUT_UNION),
+    ]
+
+
+def _send_unicode_char(char: str) -> None:
+    """Send a single Unicode character via SendInput (keydown + keyup)."""
+    code = ord(char)
+    inputs = (INPUT * 2)()
+
+    # Key down
+    inputs[0].type = INPUT_KEYBOARD
+    inputs[0].union.ki.wVk = 0
+    inputs[0].union.ki.wScan = code
+    inputs[0].union.ki.dwFlags = KEYEVENTF_UNICODE
+    inputs[0].union.ki.time = 0
+    inputs[0].union.ki.dwExtraInfo = ctypes.pointer(ctypes.c_ulong(0))
+
+    # Key up
+    inputs[1].type = INPUT_KEYBOARD
+    inputs[1].union.ki.wVk = 0
+    inputs[1].union.ki.wScan = code
+    inputs[1].union.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+    inputs[1].union.ki.time = 0
+    inputs[1].union.ki.dwExtraInfo = ctypes.pointer(ctypes.c_ulong(0))
+
+    ctypes.windll.user32.SendInput(2, ctypes.byref(inputs), ctypes.sizeof(INPUT))
+
+
+def _send_vk_key(vk_code: int) -> None:
+    """Send a virtual-key press via SendInput (keydown + keyup)."""
+    scan = ctypes.windll.user32.MapVirtualKeyW(vk_code, 0)
+    inputs = (INPUT * 2)()
+
+    # Key down
+    inputs[0].type = INPUT_KEYBOARD
+    inputs[0].union.ki.wVk = vk_code
+    inputs[0].union.ki.wScan = scan
+    inputs[0].union.ki.dwFlags = 0
+    inputs[0].union.ki.time = 0
+    inputs[0].union.ki.dwExtraInfo = ctypes.pointer(ctypes.c_ulong(0))
+
+    # Key up
+    inputs[1].type = INPUT_KEYBOARD
+    inputs[1].union.ki.wVk = vk_code
+    inputs[1].union.ki.wScan = scan
+    inputs[1].union.ki.dwFlags = KEYEVENTF_KEYUP
+    inputs[1].union.ki.time = 0
+    inputs[1].union.ki.dwExtraInfo = ctypes.pointer(ctypes.c_ulong(0))
+
+    ctypes.windll.user32.SendInput(2, ctypes.byref(inputs), ctypes.sizeof(INPUT))
+
+
+# Virtual key codes for special keys
+_VK_MAP = {
+    "enter": 0x0D,
+    "return": 0x0D,
+    "tab": 0x09,
+    "escape": 0x1B,
+    "esc": 0x1B,
+    "space": 0x20,
+    "backspace": 0x08,
+    "delete": 0x2E,
+    "del": 0x2E,
+    "up": 0x26,
+    "down": 0x28,
+    "left": 0x25,
+    "right": 0x27,
+    "home": 0x24,
+    "end": 0x23,
+    "pageup": 0x21,
+    "pagedown": 0x22,
+    "f1": 0x70, "f2": 0x71, "f3": 0x72, "f4": 0x73,
+    "f5": 0x74, "f6": 0x75, "f7": 0x76, "f8": 0x77,
+    "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
+    "capslock": 0x14,
+    "numlock": 0x90,
+    "scrolllock": 0x91,
+    "insert": 0x2D,
+    "printscreen": 0x2C,
+}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Type Keys Tool (GUI Automation via Win32 SendInput)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TypeKeysTool(Tool):
-    """Simulate keyboard typing into the currently active window."""
+    """Simulate keyboard typing into the currently active window using Win32 SendInput."""
 
     @property
     def name(self) -> str:
@@ -229,81 +339,28 @@ class TypeKeysTool(Tool):
     def validate(self, **kwargs: Any) -> bool:
         return bool(kwargs.get("keys"))
 
-    @staticmethod
-    def _escape_sendkeys(text: str) -> str:
-        """Escape characters so SendKeys treats them as literal characters, not hotkeys."""
-        specials = {
-            "{": "{{}",
-            "}": "{}}",
-            "+": "{+}",
-            "^": "{^}",
-            "%": "{%}",
-            "~": "{~}",
-            "(": "{(}",
-            ")": "{)}",
-            "[": "{[}",
-            "]": "{]}",
-        }
-        escaped = []
-        for ch in text:
-            if ch in specials:
-                escaped.append(specials[ch])
-            elif ch == "'":
-                escaped.append("''")
-            else:
-                escaped.append(ch)
-        return "".join(escaped)
-
     def execute(self, **kwargs: Any) -> ToolResult:
         keys = kwargs.get("keys", "")
         if not keys:
             return ToolResult(success=False, error="No keys provided")
 
-        safe_keys = self._escape_sendkeys(keys)
-        ps_script = (
-            "Start-Sleep -Milliseconds 500; "
-            "Add-Type -AssemblyName System.Windows.Forms; "
-            f"[System.Windows.Forms.SendKeys]::SendWait('{safe_keys}')"
-        )
         logger.info("TypeKeysTool typing: %s", keys[:80])
         try:
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps_script],
-                capture_output=True, text=True, timeout=10,
-            )
-            if result.returncode == 0:
-                return ToolResult(success=True, output=f"Typed: {keys}")
-            return ToolResult(success=False, error=result.stderr.strip())
+            time.sleep(0.3)  # brief pause to let target window become ready
+            for ch in keys:
+                _send_unicode_char(ch)
+                time.sleep(0.02)  # small inter-key delay for reliability
+            return ToolResult(success=True, output=f"Typed: {keys}")
         except Exception as exc:
             return ToolResult(success=False, error=str(exc))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Press Key Tool
+#  Press Key Tool (via Win32 SendInput)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class PressKeyTool(Tool):
     """Simulate pressing a special keyboard key (e.g. Enter, Tab, Escape, Space)."""
-
-    _KEY_MAP = {
-        "enter": "{ENTER}",
-        "return": "{ENTER}",
-        "tab": "{TAB}",
-        "escape": "{ESC}",
-        "esc": "{ESC}",
-        "space": " ",
-        "backspace": "{BACKSPACE}",
-        "delete": "{DELETE}",
-        "del": "{DELETE}",
-        "up": "{UP}",
-        "down": "{DOWN}",
-        "left": "{LEFT}",
-        "right": "{RIGHT}",
-        "home": "{HOME}",
-        "end": "{END}",
-        "pageup": "{PGUP}",
-        "pagedown": "{PGDN}",
-    }
 
     @property
     def name(self) -> str:
@@ -334,30 +391,28 @@ class PressKeyTool(Tool):
         if not raw_key:
             return ToolResult(success=False, error="No key provided")
 
-        send_key = self._KEY_MAP.get(raw_key)
-        if not send_key:
+        vk = _VK_MAP.get(raw_key)
+        if vk is None:
             if len(raw_key) == 1:
-                send_key = raw_key
+                # Single printable character — send as unicode
+                logger.info("PressKeyTool pressing char: %s", raw_key)
+                try:
+                    time.sleep(0.15)
+                    _send_unicode_char(raw_key)
+                    return ToolResult(success=True, output=f"Pressed {raw_key}")
+                except Exception as exc:
+                    return ToolResult(success=False, error=str(exc))
             else:
                 return ToolResult(
                     success=False,
-                    error=f"Unsupported key '{raw_key}'. Supported keys: {', '.join(sorted(self._KEY_MAP.keys()))}"
+                    error=f"Unsupported key '{raw_key}'. Supported keys: {', '.join(sorted(_VK_MAP.keys()))}"
                 )
 
-        ps_script = (
-            "Start-Sleep -Milliseconds 200; "
-            "Add-Type -AssemblyName System.Windows.Forms; "
-            f"[System.Windows.Forms.SendKeys]::SendWait('{send_key}')"
-        )
-        logger.info("PressKeyTool pressing: %s -> %s", raw_key, send_key)
+        logger.info("PressKeyTool pressing: %s -> VK 0x%02X", raw_key, vk)
         try:
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps_script],
-                capture_output=True, text=True, timeout=5,
-            )
-            if result.returncode == 0:
-                return ToolResult(success=True, output=f"Pressed {raw_key}")
-            return ToolResult(success=False, error=result.stderr.strip())
+            time.sleep(0.15)
+            _send_vk_key(vk)
+            return ToolResult(success=True, output=f"Pressed {raw_key}")
         except Exception as exc:
             return ToolResult(success=False, error=str(exc))
 
