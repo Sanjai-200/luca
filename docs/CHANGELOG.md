@@ -4,6 +4,20 @@ All meaningful project changes are recorded here.
 
 ## Unreleased / testing
 
+### Phase 4 & 5 — Desktop Tools, Agent, and OOP Redesign (2026-10-04)
+
+**Added:**
+- Full OOP Layered Architecture Redesign: Migrated legacy procedural flat file structure into clean `core/`, `infrastructure/`, `tools/`, `application/`, and `app/` layers.
+- Extensible Tool System: `BaseTool`, `ShellTool`, `OpenAppTool`, `CloseAppTool`, `WaitTool`, `TypeKeysTool`, `PressKeyTool`, `SearchWebTool`, `ToolRegistry`.
+- `OpenAppTool` enhanced with intelligent Start Menu and Desktop `.lnk` shortcut searching, allowing it to open hidden/non-PATH applications like 'GitHub Desktop' or 'WhatsApp'.
+- Win32 API Keyboard Automation: Replaced unreliable PowerShell `SendKeys` with pure Python `ctypes.windll.user32.SendInput` for `TypeKeysTool` and `PressKeyTool`. This resolves "Access is denied" errors and enables F1-F12 and special keys.
+- **Intent Isolation (Anti-Hallucination System):** The system prompt is now dynamically built based on the user's fast-classified intent. Tools are physically stripped from the LLM's context during purely conversational intents (like saying "hi"), guaranteeing zero tool-hallucination for casual chats.
+- Clean Stream Rendering: Added real-time XML tag stripping (`<tool>JSON</tool>`) via `filter_stream_tool_tags` so the raw JSON protocol does not leak into the conversational console output.
+
+**Changed:**
+- All tests (64 tests) modernized to target the new dependency-injected OOP architecture.
+- `ARCHITECTURE.md` updated to reflect the new layered directory structure.
+
 ### Phase 1 — Conversational Pipeline & Self-Improvement (2026-10-04)
 
 **Added:**

@@ -1,8 +1,8 @@
 # Luca Development State
 
-## Current Phase: All Tools Verified & Working
+## Current Phase: Phase 4 & 5 Complete (Desktop Tools & Agent)
 
-### Status: COMPLETE — READY FOR USER TESTING
+### Status: COMPLETE — READY FOR PHASE 6 (VOICE)
 
 ### Branch: `testing`
 
@@ -62,6 +62,6 @@ Transformed legacy procedural/monolithic structure into a clean, modular, extens
 ---
 
 ## Next Steps
-1. **User interactive testing**: Boss tests via `python main.py` with real commands.
-2. **Phase 2:** Memory summarization & long-term retrospective index.
-3. **Phase 3:** High-risk safety permission interceptor before tool execution.
+1. **Phase 6 (Voice integration):** Speech-to-Text (STT), Text-to-Speech (TTS), Wake word detection, and Speaker verification (owner-only access).
+2. **Phase 8 (Internet / Browser Automation):** Give Luca the ability to see and navigate websites automatically to perform complex booking and research tasks.
+3. **Safety pipeline (Phase 5 follow-up):** High-risk safety permission interceptor before tool execution.
